@@ -1,36 +1,49 @@
 /**
- * Revixa — Frontend Logic
- * ========================
- * Backend API ile iletişim, UI state yönetimi,
- * mock data ile test modu.
+ * Revixa — Minimalist Market Intelligence & PDF/MD Report Generator
  */
 
 const API_BASE = "http://localhost:8000";
 
 // ─── DOM References ───
-const urlInput       = document.getElementById("url-input");
-const analyzeBtn     = document.getElementById("analyze-btn");
-const platformSelect = document.getElementById("platform-select");
-const reviewsSelect  = document.getElementById("reviews-select");
+const playUrlInput     = document.getElementById("play-url-input");
+const appstoreUrlInput = document.getElementById("appstore-url-input");
+const analyzeBtn       = document.getElementById("analyze-btn");
+
+const reviewsGroup  = document.getElementById("reviews-group");
 
 const loadingSection = document.getElementById("loading-section");
 const errorSection   = document.getElementById("error-section");
 const resultsSection = document.getElementById("results-section");
 
+const asciiBar        = document.getElementById("ascii-bar");
+const progressPercent = document.getElementById("progress-percent");
+const loadingMsg     = document.getElementById("loading-msg");
+
 const stepScraping  = document.getElementById("step-scraping");
 const stepAnalyzing = document.getElementById("step-analyzing");
 const stepReport    = document.getElementById("step-report");
-const loadingMsg    = document.getElementById("loading-msg");
 
 const errorTitle  = document.getElementById("error-title");
 const errorDetail = document.getElementById("error-detail");
 
 const resultAppName = document.getElementById("result-app-name");
 const resultMeta    = document.getElementById("result-meta");
-const platformIcon  = document.getElementById("platform-icon");
 const aiBadge       = document.getElementById("ai-badge");
-const downloadBtn   = document.getElementById("download-btn");
-const summaryText   = document.getElementById("summary-text");
+const downloadMdBtn = document.getElementById("download-md-btn");
+const downloadPdfBtn = document.getElementById("download-pdf-btn");
+
+// Metrics DOM
+const metricRating      = document.getElementById("metric-rating");
+const metricRatingsCnt  = document.getElementById("metric-ratings-count");
+const metricSentiment   = document.getElementById("metric-sentiment");
+const metricSentiSub    = document.getElementById("metric-sentiment-sub");
+const metricDeveloper   = document.getElementById("metric-developer");
+const metricCategory    = document.getElementById("metric-category");
+const metricLength      = document.getElementById("metric-length");
+
+const countryDistBar  = document.getElementById("country-distribution-bar");
+const keywordsListBar = document.getElementById("keywords-list-bar");
+const summaryText     = document.getElementById("summary-text");
 
 const likedList   = document.getElementById("liked-list");
 const improveList = document.getElementById("improve-list");
@@ -41,88 +54,152 @@ const improveCount = document.getElementById("improve-count");
 const badCount     = document.getElementById("bad-count");
 
 // ─── State ───
+let selectedMaxReviews = 0;
 let currentReport = null;
+let progressTimer = null;
 
-// ─── Analyze Button Click ───
+// ─── Segmented Buttons ───
+setupSegmentGroup(reviewsGroup, (val) => { selectedMaxReviews = parseInt(val); });
+
+function setupSegmentGroup(groupEl, callback) {
+  if (!groupEl) return;
+  const buttons = groupEl.querySelectorAll(".segment-btn");
+  buttons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      buttons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      callback(btn.getAttribute("data-value"));
+    });
+  });
+}
+
+// ─── Event Listeners ───
 analyzeBtn.addEventListener("click", startAnalysis);
 
-urlInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") startAnalysis();
+[playUrlInput, appstoreUrlInput].forEach(inp => {
+  inp.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") startAnalysis();
+  });
 });
 
 async function startAnalysis() {
-  const url = urlInput.value.trim();
+  const playUrl = playUrlInput.value.trim();
+  const appstoreUrl = appstoreUrlInput.value.trim();
 
-  if (!url) {
-    urlInput.focus();
-    urlInput.style.borderColor = "rgba(239,68,68,0.5)";
-    setTimeout(() => { urlInput.style.borderColor = ""; }, 1500);
-    return;
-  }
-
-  if (!url.includes("play.google.com") && !url.includes("apps.apple.com")) {
-    showError(
-      "Geçersiz URL",
-      "Lütfen Google Play Store veya Apple App Store URL'si girin."
-    );
+  if (!playUrl && !appstoreUrl) {
+    playUrlInput.focus();
+    playUrlInput.style.borderColor = "#ffffff";
+    setTimeout(() => { playUrlInput.style.borderColor = ""; }, 1500);
     return;
   }
 
   showLoading();
 
   try {
-    const result = await analyzeApp(url);
+    const result = await analyzeApp(playUrl, appstoreUrl);
     showResults(result);
   } catch (err) {
-    showError("Analiz başarısız", err.message || "Bilinmeyen hata oluştu.");
+    showError("ANALİZ BAŞARISIZ", err.message || "Bilinmeyen bir hata oluştu.");
   }
 }
 
-// ─── API Call ───
-async function analyzeApp(url) {
+// ─── ASCII Bar Telemetry Renderer ───
+function renderAsciiBar(percent) {
+  const totalBlocks = 30;
+  const filledBlocks = Math.round((percent / 100) * totalBlocks);
+  const emptyBlocks = totalBlocks - filledBlocks;
+  return `[ ${"█".repeat(filledBlocks)}${"░".repeat(emptyBlocks)} ]`;
+}
+
+function updateProgress(percent, message, step) {
+  percent = Math.min(100, Math.max(0, percent));
+  
+  if (asciiBar) asciiBar.textContent = renderAsciiBar(percent);
+  if (progressPercent) progressPercent.textContent = `${percent.toString().padStart(2, '0')}%`;
+  if (message) loadingMsg.textContent = message;
+
+  if (step) {
+    const steps = { scraping: stepScraping, analyzing: stepAnalyzing, report: stepReport };
+    const order = ["scraping", "analyzing", "report"];
+    const idx   = order.indexOf(step);
+
+    order.forEach((s, i) => {
+      const el = steps[s];
+      if (!el) return;
+      el.classList.remove("active", "done");
+      if (i < idx)   el.classList.add("done");
+      if (i === idx) el.classList.add("active");
+    });
+  }
+}
+
+function simulateProgress() {
+  let current = 5;
+  updateProgress(5, "ÇOKLU_ÜLKE_YORUMLARI_TOPLANIYOR...", "scraping");
+
+  progressTimer = setInterval(() => {
+    if (current < 45) {
+      current += Math.floor(Math.random() * 4) + 2;
+      updateProgress(current, "MAĞAZALARDAN_METİNLİ_VERİLER_ÇEKİLİYOR...", "scraping");
+    } else if (current < 88) {
+      current += Math.floor(Math.random() * 2) + 1;
+      updateProgress(current, "AI_DUYGU_VE_PAZAR_ANALİZİ_YAPILIYOR...", "analyzing");
+    } else if (current < 98) {
+      current += 1;
+      updateProgress(current, "RAPOR_METRİKLERİ_YAPILANDIRILIYOR...", "report");
+    }
+  }, 700);
+}
+
+function stopProgress() {
+  if (progressTimer) {
+    clearInterval(progressTimer);
+    progressTimer = null;
+  }
+}
+
+// ─── API Request ───
+async function analyzeApp(playUrl, appstoreUrl) {
   const body = {
-    url: url,
-    platform: platformSelect.value,
-    max_reviews: parseInt(reviewsSelect.value),
+    play_url: playUrl || null,
+    appstore_url: appstoreUrl || null,
+    url: playUrl || appstoreUrl || null,
+    max_reviews: selectedMaxReviews,
   };
 
-  setLoadingStep("scraping");
-  setLoadingMsg("Yorumlar çekiliyor...");
+  simulateProgress();
 
-  // Simülasyon: adımlar arasında geçiş (gerçekte backend halleder)
-  await delay(800);
-  setLoadingStep("analyzing");
-  setLoadingMsg("AI yorumları analiz ediyor...");
+  try {
+    const response = await fetch(`${API_BASE}/analyze`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
 
-  const response = await fetch(`${API_BASE}/analyze`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+    stopProgress();
 
-  if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(errData.detail || errData.error || `Sunucu hatası: ${response.status}`);
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.detail || errData.error || `Sunucu hatası: ${response.status}`);
+    }
+
+    updateProgress(100, "ANALİZ_TAMAMLANDI.", "report");
+    await delay(300);
+
+    return response.json();
+  } catch (err) {
+    stopProgress();
+    throw err;
   }
-
-  setLoadingStep("report");
-  setLoadingMsg("Rapor oluşturuluyor...");
-  await delay(300);
-
-  return response.json();
 }
 
-// ─── UI State ───
+// ─── UI Rendering ───
 function showLoading() {
   hideAll();
   loadingSection.classList.add("visible");
   analyzeBtn.disabled = true;
-  analyzeBtn.innerHTML = '<span class="btn-icon">⏳</span> Analiz ediliyor...';
-
-  // Adımları sıfırla
-  [stepScraping, stepAnalyzing, stepReport].forEach(s => {
-    s.classList.remove("active", "done");
-  });
+  analyzeBtn.textContent = "İŞLENİYOR...";
+  updateProgress(0, "BAĞLANTI_KURULUYOR...", "scraping");
 }
 
 function showError(title, detail) {
@@ -139,30 +216,71 @@ function showResults(data) {
   resultsSection.classList.add("visible");
   resetBtn();
 
-  // App info
-  resultAppName.textContent = data.app_name || "Bilinmeyen Uygulama";
-  resultMeta.textContent = `${data.total_reviews} yorum analiz edildi`;
-  platformIcon.textContent = data.platform === "play" ? "▶" : "";
+  const meta = data.metadata || {};
+  resultAppName.textContent = data.app_name || meta.title || "Bilinmeyen Uygulama";
+  resultMeta.textContent = `${data.total_reviews} metinli yorum işlendi // Platform: ${(data.platform || "").toUpperCase()}`;
 
-  // AI badge
-  if (data.ai_provider === "ollama") {
-    aiBadge.className = "ai-badge ollama";
-    aiBadge.textContent = "🦙 Ollama";
-  } else {
-    aiBadge.className = "ai-badge gemini";
-    aiBadge.textContent = "🌟 Gemini";
-  }
+  aiBadge.textContent = (data.ai_provider || "AI").toUpperCase();
+
+  // Metrics Grid
+  metricRating.textContent = `⭐ ${meta.average_rating || 0.0}`;
+  metricRatingsCnt.textContent = `${(meta.total_ratings || 0).toLocaleString()} toplam puanlama`;
+
+  const sent = data.sentiment_dist || {};
+  metricSentiment.textContent = `%${sent.positive_pct || 0}`;
+  metricSentiSub.textContent = `Pozitif // Nötr: %${sent.neutral_pct || 0} // Negatif: %${sent.negative_pct || 0}`;
+
+  metricDeveloper.textContent = meta.developer || "Bilinmiyor";
+  metricCategory.textContent = `${meta.category || "Genel"} // Sürüm: ${meta.version || "v1.0"}`;
+
+  metricLength.textContent = `${data.avg_review_length || 0} kr.`;
+
+  // Country Distribution Bar
+  renderCountryBar(data.country_dist || {});
+
+  // Top Keywords
+  renderKeywordsBar(data.top_keywords || []);
 
   // Summary
-  summaryText.textContent = data.summary || "Özet oluşturulamadı.";
+  summaryText.textContent = data.summary || "Özet bulunamadı.";
 
   // Categories
   renderFeatures(likedList,   likedCount,   data.liked         || []);
   renderFeatures(improveList, improveCount, data.needs_improve  || []);
   renderFeatures(badList,     badCount,     data.bad            || []);
 
-  // Scroll to results
   resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function renderCountryBar(countryDist) {
+  countryDistBar.innerHTML = "";
+  const pcts = countryDist.percentages || {};
+  const cnts = countryDist.counts || {};
+
+  const keys = Object.keys(pcts);
+  if (!keys.length) {
+    countryDistBar.innerHTML = `<span class="metric-sub">// Coğrafi veri bulunamadı</span>`;
+    return;
+  }
+
+  keys.forEach(code => {
+    const chip = document.createElement("div");
+    chip.className = "country-chip";
+    chip.textContent = `${code}: %${pcts[code]} (${cnts[code]} yorum)`;
+    countryDistBar.appendChild(chip);
+  });
+}
+
+function renderKeywordsBar(keywords) {
+  keywordsListBar.innerHTML = "";
+  if (!keywords || !keywords.length) return;
+
+  keywords.forEach(k => {
+    const badge = document.createElement("div");
+    badge.className = "keyword-badge";
+    badge.textContent = `${k.keyword} (${k.count})`;
+    keywordsListBar.appendChild(badge);
+  });
 }
 
 function hideAll() {
@@ -173,34 +291,15 @@ function hideAll() {
 
 function resetBtn() {
   analyzeBtn.disabled = false;
-  analyzeBtn.innerHTML = '<span class="btn-icon">⚡</span> Analiz Et';
+  analyzeBtn.textContent = "ANALİZ ET";
 }
 
-// ─── Loading Steps ───
-function setLoadingStep(step) {
-  const steps = { scraping: stepScraping, analyzing: stepAnalyzing, report: stepReport };
-  const order = ["scraping", "analyzing", "report"];
-  const idx   = order.indexOf(step);
-
-  order.forEach((s, i) => {
-    const el = steps[s];
-    el.classList.remove("active", "done");
-    if (i < idx)  el.classList.add("done");
-    if (i === idx) el.classList.add("active");
-  });
-}
-
-function setLoadingMsg(msg) {
-  loadingMsg.textContent = msg;
-}
-
-// ─── Feature Rendering ───
 function renderFeatures(container, countBadge, features) {
   container.innerHTML = "";
   countBadge.textContent = features.length;
 
   if (!features.length) {
-    container.innerHTML = `<div class="empty-category">Özellik bulunamadı</div>`;
+    container.innerHTML = `<div class="empty-category">// Kayıtlı özellik yok</div>`;
     return;
   }
 
@@ -209,8 +308,8 @@ function renderFeatures(container, countBadge, features) {
     item.className = "feature-item";
     item.innerHTML = `
       <div class="feature-title">
-        ${escHtml(f.title)}
-        ${f.review_count ? `<span class="feature-review-count">${f.review_count} yorum</span>` : ""}
+        <span>${escHtml(f.title)}</span>
+        ${f.review_count ? `<span class="feature-review-count">[${f.review_count}]</span>` : ""}
       </div>
       <div class="feature-desc">${escHtml(f.description)}</div>
       ${f.example_quotes?.length ? `
@@ -220,9 +319,7 @@ function renderFeatures(container, countBadge, features) {
       ` : ""}
     `;
 
-    // Expand/collapse on click (to show quotes)
     if (f.example_quotes?.length) {
-      item.style.cursor = "pointer";
       item.addEventListener("click", () => {
         item.classList.toggle("expanded");
       });
@@ -232,8 +329,8 @@ function renderFeatures(container, countBadge, features) {
   });
 }
 
-// ─── Download Report ───
-downloadBtn.addEventListener("click", () => {
+// ─── Markdown Download ───
+downloadMdBtn.addEventListener("click", () => {
   if (!currentReport) return;
 
   const md = currentReport.markdown_report || generateMarkdown(currentReport);
@@ -245,51 +342,18 @@ downloadBtn.addEventListener("click", () => {
   URL.revokeObjectURL(a.href);
 });
 
+// ─── PDF Export (Print Clean View) ───
+downloadPdfBtn.addEventListener("click", () => {
+  if (!currentReport) return;
+  // Bütün alıntıları aç ve baskı penceresini başlat
+  document.querySelectorAll(".feature-item").forEach(el => el.classList.add("expanded"));
+  window.print();
+});
+
 function generateMarkdown(data) {
-  const lines = [
-    `# Revixa Analiz Raporu: ${data.app_name}`,
-    ``,
-    `**Platform:** ${data.platform}  `,
-    `**Analiz edilen yorum:** ${data.total_reviews}  `,
-    `**AI:** ${data.ai_provider}  `,
-    `**Tarih:** ${new Date().toLocaleDateString("tr-TR")}`,
-    ``,
-    `---`,
-    ``,
-    `## 📝 Genel Özet`,
-    ``,
-    data.summary,
-    ``,
-    `---`,
-    ``,
-    `## 🟢 Beğenilen Özellikler`,
-    ``,
-    ...formatFeaturesMd(data.liked),
-    ``,
-    `## 🟡 Geliştirilmesi Gereken`,
-    ``,
-    ...formatFeaturesMd(data.needs_improve),
-    ``,
-    `## 🔴 Kötü / Eksik Özellikler`,
-    ``,
-    ...formatFeaturesMd(data.bad),
-  ];
-  return lines.join("\n");
+  return data.markdown_report || "Rapor oluşturuldu.";
 }
 
-function formatFeaturesMd(features) {
-  if (!features?.length) return ["_Özellik bulunamadı_"];
-  return features.flatMap(f => [
-    `### ${f.title} _(${f.review_count} yorum)_`,
-    `${f.description}`,
-    ...(f.example_quotes?.length
-      ? [``, `> ${f.example_quotes.join("\n> ")}`]
-      : []),
-    ``,
-  ]);
-}
-
-// ─── Utils ───
 function escHtml(str) {
   return (str || "")
     .replace(/&/g, "&amp;")
@@ -309,53 +373,3 @@ function dateStr() {
 function delay(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
-
-// ─── MOCK TEST (API hazır olmadan UI'ı test etmek için) ───
-// Konsola: window.testMock() yaz ve Enter'a bas
-window.testMock = function () {
-  const mockData = {
-    app_name: "Acaba Ne Yesem? - Tarif Bulucu",
-    platform: "play",
-    total_reviews: 6,
-    ai_provider: "gemini",
-    summary: "Uygulama, kullanıcılar tarafından genel olarak olumlu karşılanmaktadır. Evdeki malzemelere göre tarif önerme özelliği öne çıkan en sevilen unsurdur. Kullanıcılar arayüzü sade ve kullanışlı bulmaktadır. Bununla birlikte, doğrudan tarif arama özelliğinin eksikliği sıkça dile getirilmektedir.",
-    liked: [
-      {
-        title: "Malzemeye göre tarif önerisi",
-        description: "Kullanıcılar evdeki malzemelere göre tarif önerisi yapan sistemi çok başarılı buluyor.",
-        review_count: 3,
-        example_quotes: [
-          "Sadece evdeki malzemeler ile yemek yapmak için kullanmıyorum, market alışverişi yapmadan önce de kullanıyorum.",
-          "Çok beğendim, öğrenci evinde birebir."
-        ]
-      },
-      {
-        title: "Kullanıcı Dostu Arayüz",
-        description: "Uygulamanın sade ve anlaşılır arayüzü kullanıcılar tarafından beğenilmektedir.",
-        review_count: 2,
-        example_quotes: ["Kaliteli ve özenli bir uygulama, çok beğendim."]
-      }
-    ],
-    needs_improve: [
-      {
-        title: "Tarif Arama Özelliği",
-        description: "Kullanıcılar doğrudan tarif adı ile arama yapabilmek istediklerini belirtiyor.",
-        review_count: 1,
-        example_quotes: ["Direkt tarif arama kısmı da eklenirse süper olur."]
-      }
-    ],
-    bad: [
-      {
-        title: "İçerik Genişliği",
-        description: "Bazı kullanıcılar uygulamanın daha fazla tarif içermesi gerektiğini düşünüyor.",
-        review_count: 1,
-        example_quotes: ["Faydalı bir uygulama, gelişmesi lazım."]
-      }
-    ],
-    markdown_report: ""
-  };
-
-  showResults(mockData);
-};
-
-console.log("💡 UI'ı test etmek için konsola: testMock() yazın");
