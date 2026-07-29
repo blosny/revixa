@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Revixa — Mobil Uygulama Pazar Analizi</title>
+  <meta name="description" content="Google Play Store ve App Store yorumlarını yapay zeka ile analiz et. Beğenilen, geliştirilmesi gereken ve kötü özellikleri anında keşfet." />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ─── Header ─── -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">🔭</div>
+      <span class="logo-text">Revixa</span>
+    </div>
+    <p class="header-tagline">
+      Uygulama URL'sini gir — yapay zeka yorumları analiz etsin,<br>
+      pazar içgörüsünü saniyeler içinde elde et.
+    </p>
+  </header>
+
+  <!-- ─── Main ─── -->
+  <main>
+    <div class="container">
+
+      <!-- Input Section -->
+      <section class="input-section">
+        <div class="input-card">
+          <label class="input-label" for="url-input">
+            🔗 Uygulama URL'si
+          </label>
+
+          <div class="input-row">
+            <input
+              type="url"
+              id="url-input"
+              class="url-input"
+              placeholder="https://play.google.com/store/apps/details?id=..."
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button id="analyze-btn" class="analyze-btn">
+              <span class="btn-icon">⚡</span>
+              Analiz Et
+            </button>
+          </div>
+
+          <div class="input-options">
+            <div class="option-group">
+              <label for="platform-select">Platform:</label>
+              <select id="platform-select" class="option-select">
+                <option value="auto">🤖 Otomatik</option>
+                <option value="play">▶ Google Play</option>
+                <option value="appstore"> App Store</option>
+              </select>
+            </div>
+
+            <div class="option-group">
+              <label for="reviews-select">Yorum sayısı:</label>
+              <select id="reviews-select" class="option-select">
+                <option value="0">Tümü (sınırsız)</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="200">200</option>
+                <option value="500">500</option>
+              </select>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Loading Section -->
+      <section id="loading-section" class="loading-section">
+        <div class="loading-spinner"></div>
+
+        <div class="loading-steps">
+          <div id="step-scraping" class="loading-step">
+            <span>🕷️</span> Yorumlar çekiliyor
+          </div>
+          <div id="step-analyzing" class="loading-step">
+            <span>🧠</span> AI analiz ediyor
+          </div>
+          <div id="step-report" class="loading-step">
+            <span>📊</span> Rapor oluşturuluyor
+          </div>
+        </div>
+
+        <p id="loading-msg" class="loading-msg">Lütfen bekleyin...</p>
+      </section>
+
+      <!-- Error Section -->
+      <section id="error-section" class="error-section">
+        <div class="error-card">
+          <span class="error-icon">⚠️</span>
+          <div>
+            <div class="error-title" id="error-title">Bir hata oluştu</div>
+            <div class="error-detail" id="error-detail"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Results Section -->
+      <section id="results-section" class="results-section">
+
+        <!-- App Info Bar -->
+        <div id="app-info-bar" class="app-info-bar fade-in">
+          <div class="app-info-left">
+            <span id="platform-icon" class="app-platform-icon">📱</span>
+            <div>
+              <div id="result-app-name" class="app-name">—</div>
+              <div id="result-meta" class="app-meta">—</div>
+            </div>
+          </div>
+          <div class="app-info-right">
+            <span id="ai-badge" class="ai-badge gemini">🌟 Gemini</span>
+            <button id="download-btn" class="download-btn">
+              ⬇ Raporu İndir
+            </button>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div id="summary-card" class="summary-card fade-in">
+          <div class="summary-title">
+            <span>📝</span> Genel Özet
+          </div>
+          <p id="summary-text" class="summary-text">—</p>
+        </div>
+
+        <!-- Categories -->
+        <div class="categories-grid">
+
+          <!-- Liked -->
+          <div class="category-card liked">
+            <div class="category-header">
+              <div class="category-title-row">
+                <span class="category-emoji">🟢</span>
+                <span class="category-title">Beğenilen Özellikler</span>
+              </div>
+              <span id="liked-count" class="category-count">0</span>
+            </div>
+            <div id="liked-list" class="feature-list"></div>
+          </div>
+
+          <!-- Needs Improvement -->
+          <div class="category-card improve">
+            <div class="category-header">
+              <div class="category-title-row">
+                <span class="category-emoji">🟡</span>
+                <span class="category-title">Geliştirilmesi Gereken</span>
+              </div>
+              <span id="improve-count" class="category-count">0</span>
+            </div>
+            <div id="improve-list" class="feature-list"></div>
+          </div>
+
+          <!-- Bad -->
+          <div class="category-card bad">
+            <div class="category-header">
+              <div class="category-title-row">
+                <span class="category-emoji">🔴</span>
+                <span class="category-title">Kötü / Eksik Özellikler</span>
+              </div>
+              <span id="bad-count" class="category-count">0</span>
+            </div>
+            <div id="bad-list" class="feature-list"></div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
