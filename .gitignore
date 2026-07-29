@@ -1,0 +1,50 @@
+# Environment & Secrets
+.env
+*.env
+
+# Test outputs / rapor çıktıları
+test_result/
+reports/
+*.md.bak
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv
+venv
+env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Reports output
+reports/
+
+# Test cache
+.pytest_cache/
+.coverage
+htmlcov/
