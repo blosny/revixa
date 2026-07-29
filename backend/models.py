@@ -1,148 +1,118 @@
 """
-Revixa — Pydantic Veri Modelleri
-=================================
-Tüm API istek/yanıt yapıları burada tanımlanır.
+Revixa — Pydantic Data Models
+==============================
+Tüm API veri yapıları ve Pazar Analizi Şemaları.
 """
 
-from pydantic import BaseModel, HttpUrl, field_validator
-from typing import Literal
 from enum import Enum
+from typing import Optional
+from pydantic import BaseModel, Field
 
-
-# ─────────────────────────────────────────────
-#  Enum: Platform ve AI Provider
-# ─────────────────────────────────────────────
 
 class Platform(str, Enum):
-    """Hangi mağazadan yorum çekileceği."""
-    AUTO      = "auto"       # URL'ye bakarak otomatik tespit et
-    PLAY      = "play"       # Google Play Store
-    APPSTORE  = "appstore"   # Apple App Store
+    PLAY = "play"
+    APPSTORE = "appstore"
+    BOTH = "both"
+    AUTO = "auto"
 
 
 class AIProvider(str, Enum):
-    """Analizi yapan AI servisi."""
     GEMINI = "gemini"
     OLLAMA = "ollama"
-    NONE   = "none"          # Hiçbiri mevcut değil
+    NONE = "none"
 
-
-# ─────────────────────────────────────────────
-#  İstek Modeli
-# ─────────────────────────────────────────────
-
-class AnalysisRequest(BaseModel):
-    """
-    Kullanıcının gönderdiği analiz isteği.
-
-    Örnek:
-        {
-            "url": "https://play.google.com/store/apps/details?id=com.instagram.android",
-            "platform": "auto",
-            "max_reviews": 150
-        }
-    """
-    url: str
-    platform: Platform = Platform.AUTO
-    max_reviews: int = 0  # 0 = sınırsız (tüm yorumlar)
-
-    @field_validator("max_reviews")
-    @classmethod
-    def clamp_reviews(cls, v: int) -> int:
-        """0 = sınırsız, pozitif sayı = maksimum yorum sayısı."""
-        return max(0, v)
-
-    @field_validator("url")
-    @classmethod
-    def validate_url(cls, v: str) -> str:
-        """URL'nin Play Store veya App Store olduğunu kontrol et."""
-        allowed = ["play.google.com", "apps.apple.com"]
-        if not any(domain in v for domain in allowed):
-            raise ValueError(
-                "URL Google Play Store veya Apple App Store'a ait olmalıdır."
-            )
-        return v.strip()
-
-
-# ─────────────────────────────────────────────
-#  Ham Yorum Modeli (Scraper çıktısı)
-# ─────────────────────────────────────────────
 
 class RawReview(BaseModel):
-    """Scraper'dan gelen ham yorum verisi."""
     author: str = "Anonim"
-    rating: float = 0.0       # 1.0 – 5.0 arası
+    rating: float = 0.0
     content: str
     date: str = ""
+    country: str = "TR"
+    platform: Platform = Platform.PLAY
 
-
-# ─────────────────────────────────────────────
-#  Analiz Sonuç Modelleri
-# ─────────────────────────────────────────────
 
 class FeatureItem(BaseModel):
-    """
-    Tek bir özellik/bulgu.
-
-    Örnek:
-        {
-            "title": "Kullanıcı arayüzü",
-            "description": "Kullanıcılar arayüzün sade ve kolay olduğunu vurguluyor.",
-            "review_count": 42,
-            "example_quotes": ["Çok kullanışlı!", "Arayüz mükemmel."]
-        }
-    """
     title: str
     description: str
     review_count: int = 0
-    example_quotes: list[str] = []
+    example_quotes: list[str] = Field(default_factory=list)
+
+
+class AppMetadata(BaseModel):
+    title: str
+    developer: str = "Bilinmiyor"
+    category: str = "Genel"
+    average_rating: float = 0.0
+    total_ratings: int = 0
+    version: str = "v1.0"
+    updated_date: str = "—"
+    price: str = "Ücretsiz"
+    contains_ads: bool = False
+
+
+class RatingDistribution(BaseModel):
+    star_5: int = 0
+    star_4: int = 0
+    star_3: int = 0
+    star_2: int = 0
+    star_1: int = 0
+
+
+class SentimentDistribution(BaseModel):
+    positive_pct: float = 0.0
+    neutral_pct: float = 0.0
+    negative_pct: float = 0.0
+
+
+class CountryDistribution(BaseModel):
+    counts: dict[str, int] = Field(default_factory=dict)
+    percentages: dict[str, float] = Field(default_factory=dict)
+
+
+class KeywordCount(BaseModel):
+    keyword: str
+    count: int
+
+
+class AnalysisRequest(BaseModel):
+    url: Optional[str] = None
+    play_url: Optional[str] = None
+    appstore_url: Optional[str] = None
+    platform: Platform = Platform.AUTO
+    max_reviews: int = Field(default=0, ge=0)
 
 
 class AnalysisResult(BaseModel):
-    """
-    Tam analiz sonucu — API'den dönen yanıt.
-
-    Alanlar:
-        app_name        : Uygulamanın adı
-        platform        : Analiz edilen platform
-        total_reviews   : İşlenen toplam yorum sayısı
-        ai_provider     : Analizi yapan AI (gemini veya ollama)
-        liked           : Beğenilen özellikler listesi
-        needs_improve   : Geliştirilmesi gereken özellikler
-        bad             : Kötü / eksik özellikler
-        summary         : Genel özet (1-2 paragraf)
-        markdown_report : İndirilebilir Markdown rapor metni
-    """
     app_name: str
     platform: Platform
     total_reviews: int
     ai_provider: AIProvider
-
-    liked: list[FeatureItem] = []
-    needs_improve: list[FeatureItem] = []
-    bad: list[FeatureItem] = []
-
-    summary: str = ""
+    
+    # Detaylı Pazar İstatistikleri
+    metadata: AppMetadata = Field(default_factory=AppMetadata)
+    rating_dist: RatingDistribution = Field(default_factory=RatingDistribution)
+    sentiment_dist: SentimentDistribution = Field(default_factory=SentimentDistribution)
+    country_dist: CountryDistribution = Field(default_factory=CountryDistribution)
+    top_keywords: list[KeywordCount] = Field(default_factory=list)
+    avg_review_length: int = 0  # Karakter cinsinden
+    
+    # AI Kategorizasyonu
+    summary: str
+    liked: list[FeatureItem] = Field(default_factory=list)
+    needs_improve: list[FeatureItem] = Field(default_factory=list)
+    bad: list[FeatureItem] = Field(default_factory=list)
+    
+    # Markdown Raporu
     markdown_report: str = ""
 
 
-# ─────────────────────────────────────────────
-#  AI Durum Modeli  (GET /ai-status için)
-# ─────────────────────────────────────────────
-
 class AIStatus(BaseModel):
-    """Gemini ve Ollama'nın anlık durumu."""
     gemini_available: bool
     ollama_available: bool
-    ollama_model: str = ""
+    ollama_model: str
     active_provider: AIProvider
 
 
-# ─────────────────────────────────────────────
-#  Hata Modeli
-# ─────────────────────────────────────────────
-
 class ErrorResponse(BaseModel):
-    """API hata yanıtı."""
     error: str
-    detail: str = ""
+    detail: str
