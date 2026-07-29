@@ -1,0 +1,27 @@
+# =============================================
+#  Revixa — Python Bağımlılıkları
+# =============================================
+
+# Web framework
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+
+# Review scraping
+google-play-scraper==1.2.7
+# Not: App Store için Apple'ın iTunes RSS API'si kullanılır (httpx ile)
+
+# AI — Gemini
+google-generativeai==0.8.3
+
+# HTTP client (Ollama + App Store API için)
+httpx==0.27.2
+
+# Env & config
+python-dotenv==1.0.1
+
+# Data validation
+pydantic==2.10.3
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.24.0
