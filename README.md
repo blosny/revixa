@@ -1,124 +1,90 @@
-# 🔭 Revixa
+# REVIXA — Mobile Application Market Intelligence
 
-> **Mobil uygulama yorumlarını yapay zeka ile analiz et — pazar içgörüsünü anında elde et.**
+REVIXA is an automated market research and sentiment analysis engine designed to extract, analyze, and structure user feedback from Google Play Store and Apple App Store.
 
-Revixa, Google Play Store ve Apple App Store URL'lerinden uygulama yorumlarını otomatik olarak çekip, Gemini AI (veya yerel Ollama) ile analiz ederek üç kategoride detaylı rapor üreten bir otomasyon aracıdır.
-
----
-
-## ✨ Özellikler
-
-- 🕷️ **Otomatik Review Çekme** — Play Store & App Store URL'si gir, gerisini Revixa halleder
-- 🧠 **AI Destekli Analiz** — Gemini 1.5 Flash ile akıllı kategorizasyon
-- 🔄 **Otomatik Fallback** — Gemini limiti dolunca Ollama'ya geçer (kesintisiz çalışır)
-- 📊 **3 Kategori Raporu** — Beğenilen / Geliştirilmesi Gereken / Kötü özellikler
-- 📥 **Rapor İndirme** — Markdown formatında indirilebilir analiz
-- 🎨 **Modern Web UI** — Glassmorphism dark mode arayüz
+It utilizes an AI Router mechanism combining Google Gemini Flash with local Ollama fallback to categorize user sentiment, geographic telemetry, rating distributions, and product feature requests without service interruption.
 
 ---
 
-## 🚀 Hızlı Başlangıç
+## // Purpose
 
-### Gereksinimler
-- Python 3.10+
-- Gemini API key → [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
-- *(İsteğe bağlı)* Ollama → [ollama.com/download](https://ollama.com/download)
-
-### Kurulum
-
-```bash
-# 1. Repoyu klonla
-git clone https://github.com/blosny/revixa.git
-cd revixa
-
-# 2. Sanal ortam oluştur
-python -m venv venv
-venv\Scripts\activate        # Windows
-# source venv/bin/activate   # macOS/Linux
-
-# 3. Bağımlılıkları yükle
-pip install -r backend/requirements.txt
-
-# 4. API key ayarla
-cp .env.example .env
-# .env dosyasını aç ve GEMINI_API_KEY'i gir
-
-# 5. Çalıştır
-uvicorn backend.main:app --reload --port 8000
-```
-
-### Ollama Kurulumu (İsteğe Bağlı — Fallback için)
-
-```bash
-# 1. Ollama'yı indir: https://ollama.com/download
-# 2. Modeli indir:
-ollama pull llama3.2
-# 3. Ollama'yı çalıştır (arka planda otomatik başlar)
-```
+The primary goal of REVIXA is to provide developers, product managers, and market researchers with instant, actionable product insights derived directly from end-user reviews across global application stores.
 
 ---
 
-## 📊 Nasıl Çalışır?
+## // Core Capabilities
 
-```
-1. Web arayüzüne Play Store veya App Store URL'si gir
-2. Revixa ilgili platformdan yorumları çeker (max 200)
-3. Yorumlar AI'ya gönderilir (önce Gemini, yoksa Ollama)
-4. AI yorumları 3 kategoriye ayırır:
-   🟢 Beğenilen Özellikler
-   🟡 Geliştirilmesi Gerekenler
-   🔴 Kötü / Eksik Özellikler
-5. Rapor web arayüzünde gösterilir ve indirilebilir
-```
+- **Multi-Store & Dual Link Support**: Simultaneously ingests user reviews from Google Play Store and Apple App Store.
+- **Geographic Telemetry**: Tracks country distribution percentages across international markets (TR, US, DE, GB, FR, BR, IN).
+- **AI Fallback Router**: Primary analysis executed via Gemini 2.0 Flash; automatically switches to local Ollama (Llama 3.2) if rate limits occur.
+- **Market Metrics**: Computes average review character lengths, star rating distributions, and keyword frequency tags.
+- **Structured Export**: Generates printable PDF documents and Markdown (.md) reports.
+- **Minimalist Interface**: Zero-clutter, monochrome user interface with custom segmented controls.
 
 ---
 
-## 🤖 AI Fallback Mekanizması
-
-```
-İstek → Gemini API
-            ↓
-       Başarılı? ✅ → Gemini sonucu kullan
-       Rate Limit? ❌ → Ollama'ya geç (localhost:11434)
-                           ↓
-                    Ollama kurulu mu? ✅ → Ollama sonucu kullan
-                    Kurulu değil? ❌ → Kullanıcıya bildir
-```
-
----
-
-## 📁 Proje Yapısı
+## // Architecture & File Structure
 
 ```
 revixa/
 ├── backend/
-│   ├── main.py          # FastAPI sunucu
-│   ├── scraper.py       # Review çekme motoru
-│   ├── analyzer.py      # AI Router (Gemini + Ollama)
-│   ├── models.py        # Veri modelleri
-│   └── requirements.txt
+│   ├── main.py          # FastAPI application & REST endpoints
+│   ├── analyzer.py      # AI Router (Gemini -> Ollama) & report generator
+│   ├── scraper.py       # Multi-country review & metadata extraction engine
+│   ├── models.py        # Pydantic data schemas & statistics models
+│   └── requirements.txt # Python dependencies
 ├── frontend/
-│   ├── index.html       # Ana arayüz
-│   ├── style.css        # Glassmorphism UI
-│   └── app.js           # Frontend logic
-├── .env.example         # API key şablonu
-└── README.md
+│   ├── index.html       # Minimalist HTML interface
+│   ├── style.css        # Monochrome design system & print layout
+│   └── app.js           # Client-side telemetry, API fetch & export logic
+├── debug_reviews.py     # Review extraction debug utility
+├── test_scraper.py      # Scraper validation script
+├── test_analyzer.py     # AI Router fallback test script
+├── .env                 # Environment configuration
+├── .gitignore           # Git exclusion rules
+└── README.md            # System documentation
 ```
 
 ---
 
-## 🛠️ Teknoloji Stack
+## // Tech Stack
 
-| Katman | Teknoloji |
-|--------|-----------|
-| Backend | Python, FastAPI |
-| Review Scraping | google-play-scraper, app-store-scraper |
-| AI (Birincil) | Google Gemini 1.5 Flash |
-| AI (Yedek) | Ollama (llama3.2 / mistral) |
-| Frontend | HTML, CSS, Vanilla JS |
+- **Backend**: Python 3.13, FastAPI, Pydantic, HTTPX, google-genai
+- **Frontend**: HTML5, Vanilla JavaScript, CSS3 (Monochrome & Print Layout)
+- **AI Engines**: Google Gemini 2.0 Flash, Ollama (Llama 3.2)
 
 ---
 
-## 📄 Lisans
+## // Quick Start
 
-MIT License — Özgürce kullan, geliştir, paylaş.
+### 1. Environment Setup
+
+Copy `.env.example` to `.env` and set your configuration:
+
+```bash
+GEMINI_API_KEY=your_gemini_api_key
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2
+```
+
+### 2. Backend Server Initialization
+
+```bash
+# Create virtual environment & install dependencies
+python -m venv venv
+venv\Scripts\activate
+pip install -r backend/requirements.txt
+
+# Start FastAPI server
+uvicorn backend.main:app --port 8000
+```
+
+### 3. Frontend Execution
+
+Open `frontend/index.html` in any web browser.
+
+---
+
+## // License & Credits
+
+MIT License. Designed and developed by **blosny**.
