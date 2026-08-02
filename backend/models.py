@@ -1,7 +1,7 @@
 """
-Revixa — Pydantic Data Models
-==============================
-Tüm API veri yapıları ve Pazar Analizi Şemaları.
+Revixa — Pydantic Data Models & Market Metrics
+===============================================
+Tüm API veri yapıları, Zenginleştirilmiş Pazar Analizi Şemaları ve Güvenlik Modelleri.
 """
 
 from enum import Enum
@@ -36,6 +36,12 @@ class FeatureItem(BaseModel):
     description: str
     review_count: int = 0
     example_quotes: list[str] = Field(default_factory=list)
+
+
+class CompetitorMention(BaseModel):
+    competitor_name: str
+    mention_count: int = 0
+    context: str = ""
 
 
 class AppMetadata(BaseModel):
@@ -94,7 +100,13 @@ class AnalysisResult(BaseModel):
     sentiment_dist: SentimentDistribution = Field(default_factory=SentimentDistribution)
     country_dist: CountryDistribution = Field(default_factory=CountryDistribution)
     top_keywords: list[KeywordCount] = Field(default_factory=list)
-    avg_review_length: int = 0  # Karakter cinsinden
+    avg_review_length: int = 0
+    
+    # 🚀 ZENGİNLEŞTİRİLMİŞ YENİ PAZAR İÇGÖRÜLERİ
+    churn_risk_score: float = 0.0          # 0 - 100 Arası Müşteri Kayıp Riski Skoru
+    version_issue_warning: str = ""       # Güncelleme Sonrası Hata Uyarısı
+    competitor_mentions: list[CompetitorMention] = Field(default_factory=list) # Rakip Bahisleri
+    feature_rankings: list[str] = Field(default_factory=list)                   # En Çok İstenen Özellik Sıralaması
     
     # AI Kategorizasyonu
     summary: str
@@ -104,6 +116,7 @@ class AnalysisResult(BaseModel):
     
     # Markdown Raporu
     markdown_report: str = ""
+    cached_response: bool = False
 
 
 class AIStatus(BaseModel):

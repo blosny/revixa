@@ -1,8 +1,8 @@
 """
-Revixa — AI Analyzer & Structured Report Generator
-===================================================
-Yorumları analiz eder, duygu analizi hesaplar ve
-profesyonel Markdown & PDF uyumlu raporlar üretir.
+Revixa — AI Analyzer & Enriched Report Generator
+=================================================
+Yorumları analiz eder; Duygu analizi, Churn Riski, Güncelleme Hata Uyarısı,
+Rakip Bahisleri ve Özellik Sıralaması içeren profesyonel raporlar üretir.
 """
 
 import os
@@ -13,28 +13,32 @@ import httpx
 
 from models import (
     AIProvider, AIStatus, AnalysisResult,
-    FeatureItem, Platform, RawReview,
+    FeatureItem, CompetitorMention, Platform, RawReview,
     AppMetadata, RatingDistribution, SentimentDistribution,
     CountryDistribution, KeywordCount
 )
 
 logger = logging.getLogger("revixa.analyzer")
 
-# ─────────────────────────────────────────────
-#  Prompt (Şablon Metinler Kaldırıldı!)
-# ─────────────────────────────────────────────
-
 ANALYSIS_PROMPT = """Sen uzman bir mobil uygulama pazar analistisin. Sana verilen kullanıcı yorumlarını inceleyip pazar analizi raporu çıkaracaksın.
 
 GÖREVİN VE KESİN KURALLARIN:
 1. Yorumları dikkatle incele ve aşağıdaki 3 kategoride EN AZ 2-5 somut konu/özellik çıkar.
 2. "summary": Yorumlardan yola çıkarak uygulamanın genel durumunu anlatan ÖZGÜN ve GERÇEK 2-3 cümlelik Türkçe değerlendirme özeti yaz.
-3. "example_quotes": Özellik hakkındaki GERÇEK kullanıcı yorumlarının TAM CÜMLELERİNİ kesmeden tırnak içinde alıntıla. Kesinlikle "alıntı 1", "örnek yorum" gibi jenerik/sahte metinler YAZMA! Gerçek yorum metnini kopyala.
+3. "example_quotes": Özellik hakkındaki GERÇEK kullanıcı yorumlarının TAM CÜMLELERİNİ kesmeden tırnak içinde alıntıla. Kesinlikle sahte metinler YAZMA!
+4. "churn_risk_score": 0 ile 100 arasında uygulamanın müşteri kaybetme riski yüzdesi (Örn: Sildim, üyelik iptali diyenlerin oranına göre).
+5. "version_issue_warning": "Güncellemeden sonra bozuldu/donuyor" diyenler varsa 1 cümlelik güncelleme uyarısı yaz, yoksa "".
+6. "competitor_mentions": Yorumlarda geçen rakip uygulama isimleri varsa çıkar (Örn: {"competitor_name": "Adobe", "mention_count": 3, "context": "Adobe'dan daha pratik"}).
+7. "feature_rankings": Kullanıcıların en çok talep ettiği 3-5 özelliği talep sırasına göre Türkçe liste ver.
 
 HER ZAMAN SADECE AŞAĞIDAKİ GEÇERLİ JSON YAPISINI DÖNDÜR:
 
 {
   "summary": "",
+  "churn_risk_score": 15.0,
+  "version_issue_warning": "",
+  "competitor_mentions": [],
+  "feature_rankings": [],
   "liked": [
     {
       "title": "",
@@ -123,11 +127,26 @@ def _parse_ai_response(raw: str, app_name: str, platform: Platform,
             ))
         return result
 
+    def parse_competitors(items: list) -> list[CompetitorMention]:
+        res = []
+        for item in (items or []):
+            if isinstance(item, dict) and item.get("competitor_name"):
+                res.append(CompetitorMention(
+                    competitor_name=str(item.get("competitor_name")),
+                    mention_count=int(item.get("mention_count", 1)),
+                    context=str(item.get("context", "")),
+                ))
+        return res
+
     summary = (data.get("summary") or "").strip()
     if not summary or "özeti" in summary.lower() and len(summary) < 80:
-        # Fallback özgün özet
         pos_cnt = sum(1 for r in reviews if r.rating >= 4)
         summary = f"Kullanıcılar uygulamayı genel olarak değerlendirdi. Toplam {total_reviews} metinli yorum içinden {pos_cnt} kullanıcı olumlu geri bildirimde bulundu."
+
+    churn_keywords = ["sildim", "siliyorum", "iptal", "berbat", "bok", "çöp", "kötü", "uninstall", "delete"]
+    churn_count = sum(1 for r in reviews if any(k in r.content.lower() for k in churn_keywords))
+    calculated_churn_score = round((churn_count / len(reviews)) * 100, 1) if reviews else 0.0
+    churn_risk = float(data.get("churn_risk_score") or calculated_churn_score)
 
     sentiment = calculate_sentiment_distribution(reviews)
 
@@ -142,6 +161,10 @@ def _parse_ai_response(raw: str, app_name: str, platform: Platform,
         country_dist=country_dist,
         top_keywords=keywords,
         avg_review_length=avg_len,
+        churn_risk_score=churn_risk,
+        version_issue_warning=str(data.get("version_issue_warning", "")),
+        competitor_mentions=parse_competitors(data.get("competitor_mentions", [])),
+        feature_rankings=list(data.get("feature_rankings", [])),
         summary=summary,
         liked=parse_features(data.get("liked", [])),
         needs_improve=parse_features(data.get("needs_improve", [])),
@@ -153,7 +176,7 @@ def _parse_ai_response(raw: str, app_name: str, platform: Platform,
 
 
 # ─────────────────────────────────────────────
-#  Gemini Analyzer (google-genai SDK)
+#  Gemini Analyzer
 # ─────────────────────────────────────────────
 
 class GeminiAnalyzer:
@@ -190,9 +213,9 @@ class GeminiAnalyzer:
             except Exception as e:
                 last_err = e
                 if "RESOURCE_EXHAUSTED" in str(e) or "429" in str(e):
-                    logger.warning(f"Gemini 429 Rate Limit (Deneme {attempt}/3). 5 saniye bekleniyor...")
+                    logger.warning(f"Gemini 429 Rate Limit (Deneme {attempt}/3). 4 saniye bekleniyor...")
                     import time
-                    time.sleep(5)
+                    time.sleep(4)
                 else:
                     raise e
 
@@ -261,7 +284,7 @@ class OllamaAnalyzer:
 
 
 # ─────────────────────────────────────────────
-#  AI Router — Gemini → Ollama Fallback
+#  AI Router
 # ─────────────────────────────────────────────
 
 class AIRouter:
@@ -282,10 +305,10 @@ class AIRouter:
             try:
                 return self._gemini.analyze(reviews, app_name, platform, metadata, rating_dist, country_dist, avg_len, keywords)
             except Exception as e:
-                logger.warning(f"⚠️  Gemini hatası: {e} → Ollama'ya geçiliyor...")
+                logger.warning(f"Gemini hatası: {e} -> Ollama servisine geçiliyor...")
 
         if self._ollama.is_available():
-            logger.info("🦙 Ollama kullanılıyor...")
+            logger.info("Ollama kullanılıyor...")
             return self._ollama.analyze(reviews, app_name, platform, metadata, rating_dist, country_dist, avg_len, keywords)
 
         raise RuntimeError("Hiçbir AI servisi kullanılamıyor.")
@@ -302,7 +325,7 @@ class AIRouter:
 
 
 # ─────────────────────────────────────────────
-#  Structured Markdown & PDF Report Generator
+#  Structured Markdown Report Generator (Sıfır Emoji!)
 # ─────────────────────────────────────────────
 
 def _build_markdown_report(result: AnalysisResult) -> str:
@@ -314,11 +337,11 @@ def _build_markdown_report(result: AnalysisResult) -> str:
         "",
         "---",
         "",
-        "### 📌 1. UYGULAMA VE PAZAR KİMLİĞİ",
+        "### 1. UYGULAMA VE PAZAR KİMLİĞİ",
         f"- **Platform:** {result.platform.value.upper()}",
         f"- **Geliştirici:** {result.metadata.developer}",
         f"- **Kategori:** {result.metadata.category}",
-        f"- **Ortalama Puan:** ⭐ {result.metadata.average_rating} / 5.0 ({result.metadata.total_ratings:,} toplam değerlendirme)",
+        f"- **Ortalama Puan:** {result.metadata.average_rating} / 5.0 ({result.metadata.total_ratings:,} toplam değerlendirme)",
         f"- **Sürüm Versiyonu:** {result.metadata.version}",
         f"- **İşlenen Metinli Yorum:** {result.total_reviews} adet",
         f"- **Ortalama Yorum Uzunluğu:** {result.avg_review_length} karakter",
@@ -327,19 +350,26 @@ def _build_markdown_report(result: AnalysisResult) -> str:
         "",
         "---",
         "",
-        "### 📊 2. DUYGU VE ÜLKE DAĞILIM İSTATİSTİKLERİ",
+        "### 2. DUYGU, CHURN VE ÜLKE İSTATİSTİKLERİ",
         "",
         "#### Duygu Analizi Oranları:",
-        f"- 🟢 **Pozitif Yorumlar:** %{result.sentiment_dist.positive_pct}",
-        f"- 🟡 **Nötr Yorumlar:** %{result.sentiment_dist.negative_pct}",
-        f"- 🔴 **Negatif Yorumlar:** %{result.sentiment_dist.negative_pct}",
+        f"- **Pozitif Yorumlar:** %{result.sentiment_dist.positive_pct}",
+        f"- **Nötr Yorumlar:** %{result.sentiment_dist.neutral_pct}",
+        f"- **Negatif Yorumlar:** %{result.sentiment_dist.negative_pct}",
+        f"- **Müşteri Kaybetme (Churn) Riski:** %{result.churn_risk_score}",
+    ]
+
+    if result.version_issue_warning:
+        lines.append(f"- **Güncelleme Uyarısı:** {result.version_issue_warning}")
+
+    lines += [
         "",
         "#### Coğrafi Ülke Dağılımı (%):",
     ]
 
     for c_code, pct in result.country_dist.percentages.items():
         cnt = result.country_dist.counts.get(c_code, 0)
-        lines.append(f"- **{c_code}:** %{pct} ({cnt} yorum)")
+        lines.append(f"- **{c_code}:** %{pct} ({cnt} yorum / {result.total_reviews} toplam)")
 
     if result.top_keywords:
         lines += [
@@ -348,17 +378,24 @@ def _build_markdown_report(result: AnalysisResult) -> str:
             ", ".join(f"`{k.keyword}` ({k.count})" for k in result.top_keywords)
         ]
 
+    if result.feature_rankings:
+        lines += [
+            "",
+            "#### En Çok Talep Edilen Özellik Sıralaması:",
+            "\n".join(f"{i+1}. {feat}" for i, feat in enumerate(result.feature_rankings))
+        ]
+
     lines += [
         "",
         "---",
         "",
-        "### 📝 3. GENEL PAZAR ANALİZ ÖZETİ",
+        "### 3. GENEL PAZAR ANALİZ ÖZETİ",
         "",
         result.summary or "_Özet oluşturulamadı._",
         "",
         "---",
         "",
-        "### 🟢 4. BEĞENİLEN VE ÖNE ÇIKAN ÖZELLİKLER",
+        "### 4. BEĞENİLEN VE ÖNE ÇIKAN ÖZELLİKLER",
         "",
     ]
 
@@ -367,7 +404,7 @@ def _build_markdown_report(result: AnalysisResult) -> str:
             return ["_Özellik kaydı bulunamadı_", ""]
         out = []
         for f in features:
-            out.append(f"#### • {f.title} _({f.review_count} Yorum)_")
+            out.append(f"#### [+] {f.title} _({f.review_count} Yorum)_")
             out.append(f"{f.description}")
             if f.example_quotes:
                 out.append("")
@@ -378,9 +415,9 @@ def _build_markdown_report(result: AnalysisResult) -> str:
         return out
 
     lines += fmt_features(result.liked)
-    lines += ["### 🟡 5. GELİŞTİRİLMESİ GEREKEN KONULAR", ""]
+    lines += ["### 5. GELİŞTİRİLMESİ GEREKEN KONULAR", ""]
     lines += fmt_features(result.needs_improve)
-    lines += ["### 🔴 6. KÖTÜ VE EKSİK BULUNAN BÖLÜMLER / ŞİKAYETLER", ""]
+    lines += ["### 6. KÖTÜ VE EKSİK BULUNAN BÖLÜMLER / ŞİKAYETLER", ""]
     lines += fmt_features(result.bad)
 
     lines += [
