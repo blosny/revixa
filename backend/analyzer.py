@@ -187,7 +187,7 @@ class GeminiAnalyzer:
         try:
             from google import genai
             self.client = genai.Client(api_key=api_key)
-            self.model_name = "gemini-flash-latest"
+            self.model_name = "gemini-2.5-flash"
         except ImportError:
             raise RuntimeError("google-genai paketi bulunamadı.")
 
