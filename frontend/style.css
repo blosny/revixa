@@ -39,7 +39,7 @@ body {
 }
 
 .container {
-  max-width: 920px;
+  max-width: 960px;
   margin: 0 auto;
   padding: 0 20px;
   position: relative;
@@ -84,9 +84,16 @@ body {
 
 .dual-input-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 20px;
+  grid-template-columns: 1fr 1px 1fr;
+  gap: 24px;
+  align-items: stretch;
+  padding-bottom: 24px;
+}
+
+.input-divider {
+  width: 1px;
+  background: var(--border-light);
+  height: 100%;
 }
 
 .input-field-group {
@@ -101,7 +108,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--text-muted);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .url-input {
@@ -127,8 +134,33 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
-  padding-top: 16px;
+  padding-top: 20px;
   border-top: 1px solid var(--border-light);
+}
+
+.action-buttons-group {
+  display: flex;
+  gap: 10px;
+}
+
+.clear-cache-btn {
+  padding: 12px 18px;
+  background: #000000;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sharp);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.clear-cache-btn:hover {
+  border-color: #ffffff;
+  color: #ffffff;
 }
 
 .analyze-btn {
@@ -297,7 +329,25 @@ body {
   color: #71717a;
 }
 
-/* ─── Error Section ─── */
+/* Toast Message */
+.toast-message {
+  display: none;
+  padding: 12px 20px;
+  background: #ffffff;
+  color: #000000;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.toast-message.visible {
+  display: block;
+}
+
+/* Error Section */
 .error-section {
   display: none;
   margin-bottom: 40px;
@@ -418,6 +468,8 @@ body {
   background: var(--bg-card);
   border: 1px solid var(--border-light);
   padding: 16px;
+  page-break-inside: avoid;
+  break-inside: avoid;
 }
 
 .metric-title {
@@ -457,6 +509,8 @@ body {
   border: 1px solid var(--border-light);
   padding: 20px;
   margin-bottom: 20px;
+  page-break-inside: avoid;
+  break-inside: avoid;
 }
 
 .country-distribution-bar {
@@ -499,6 +553,8 @@ body {
   border: 1px solid var(--border-light);
   padding: 24px;
   margin-bottom: 24px;
+  page-break-inside: avoid;
+  break-inside: avoid;
 }
 
 .summary-title {
@@ -526,6 +582,8 @@ body {
 .category-card {
   background: var(--bg-card);
   border: 1px solid var(--border-light);
+  page-break-inside: avoid;
+  break-inside: avoid;
 }
 
 .category-header {
@@ -558,16 +616,12 @@ body {
 .feature-item {
   padding: 16px;
   border-bottom: 1px solid #141822;
-  cursor: pointer;
-  transition: background 0.15s ease;
+  page-break-inside: avoid;
+  break-inside: avoid;
 }
 
 .feature-item:last-child {
   border-bottom: none;
-}
-
-.feature-item:hover {
-  background: var(--bg-card-hover);
 }
 
 .feature-title {
@@ -593,16 +647,12 @@ body {
 }
 
 .feature-quotes {
-  display: none;
+  display: flex;
+  flex-direction: column;
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid var(--border-light);
   gap: 6px;
-}
-
-.feature-item.expanded .feature-quotes {
-  display: flex;
-  flex-direction: column;
 }
 
 .quote {
@@ -612,6 +662,7 @@ body {
   padding: 8px 12px;
   background: #000000;
   border-left: 2px solid #ffffff;
+  word-break: break-word;
 }
 
 .empty-category {
@@ -622,7 +673,7 @@ body {
   color: var(--text-dim);
 }
 
-/* ─── Footer Signature ─── */
+/* Footer Signature */
 .footer-credit {
   position: fixed;
   bottom: 20px;
@@ -648,22 +699,33 @@ body {
   border-color: #ffffff;
 }
 
-/* ─── Print & PDF Export Styling ─── */
-@media print {
-  body { background: #ffffff !important; color: #000000 !important; }
-  .header, .input-section, .footer-credit, .app-info-right, .loading-section { display: none !important; }
-  .container { max-width: 100% !important; padding: 0 !important; }
-  .app-info-bar, .metric-card, .telemetry-bar-card, .summary-card, .category-card {
-    background: #ffffff !important; border: 1px solid #000000 !important; color: #000000 !important;
-  }
-  .app-name, .metric-value, .metric-value-sm, .summary-text, .category-title, .feature-title { color: #000000 !important; }
-  .country-chip, .keyword-badge, .quote { background: #f4f4f5 !important; color: #000000 !important; border-color: #000000 !important; }
-  .categories-grid { grid-template-columns: 1fr 1fr 1fr !important; }
-  .feature-quotes { display: flex !important; }
+/* ─── PDF Render & Printable Styling ─── */
+.pdf-export-mode {
+  background: #000000 !important;
+  color: #ffffff !important;
+  padding: 20px !important;
+  width: 900px !important;
+}
+
+.pdf-export-mode .metric-card,
+.pdf-export-mode .telemetry-bar-card,
+.pdf-export-mode .summary-card,
+.pdf-export-mode .category-card {
+  background: #09090b !important;
+  border: 1px solid #27272a !important;
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+  margin-bottom: 16px !important;
+}
+
+.pdf-export-mode .feature-item {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
 }
 
 @media (max-width: 768px) {
   .dual-input-grid { grid-template-columns: 1fr; }
+  .input-divider { display: none; }
   .metrics-grid { grid-template-columns: 1fr 1fr; }
   .categories-grid { grid-template-columns: 1fr; }
 }

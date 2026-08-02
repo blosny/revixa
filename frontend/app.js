@@ -4,16 +4,17 @@
 
 const API_BASE = "http://localhost:8000";
 
-// ─── DOM References ───
+// DOM References
 const playUrlInput     = document.getElementById("play-url-input");
 const appstoreUrlInput = document.getElementById("appstore-url-input");
 const analyzeBtn       = document.getElementById("analyze-btn");
+const clearCacheBtn    = document.getElementById("clear-cache-btn");
 
-const reviewsGroup  = document.getElementById("reviews-group");
+const reviewsGroup     = document.getElementById("reviews-group");
 
-const loadingSection = document.getElementById("loading-section");
-const errorSection   = document.getElementById("error-section");
-const resultsSection = document.getElementById("results-section");
+const loadingSection   = document.getElementById("loading-section");
+const errorSection     = document.getElementById("error-section");
+const resultsSection   = document.getElementById("results-section");
 
 const asciiBar        = document.getElementById("ascii-bar");
 const progressPercent = document.getElementById("progress-percent");
@@ -25,11 +26,12 @@ const stepReport    = document.getElementById("step-report");
 
 const errorTitle  = document.getElementById("error-title");
 const errorDetail = document.getElementById("error-detail");
+const toastMsg    = document.getElementById("toast-message");
 
-const resultAppName = document.getElementById("result-app-name");
-const resultMeta    = document.getElementById("result-meta");
-const aiBadge       = document.getElementById("ai-badge");
-const downloadMdBtn = document.getElementById("download-md-btn");
+const resultAppName  = document.getElementById("result-app-name");
+const resultMeta     = document.getElementById("result-meta");
+const aiBadge        = document.getElementById("ai-badge");
+const downloadMdBtn  = document.getElementById("download-md-btn");
 const downloadPdfBtn = document.getElementById("download-pdf-btn");
 
 // Metrics DOM
@@ -53,12 +55,12 @@ const likedCount   = document.getElementById("liked-count");
 const improveCount = document.getElementById("improve-count");
 const badCount     = document.getElementById("bad-count");
 
-// ─── State ───
+// State
 let selectedMaxReviews = 0;
 let currentReport = null;
 let progressTimer = null;
 
-// ─── Segmented Buttons ───
+// Segmented Buttons
 setupSegmentGroup(reviewsGroup, (val) => { selectedMaxReviews = parseInt(val); });
 
 function setupSegmentGroup(groupEl, callback) {
@@ -73,14 +75,35 @@ function setupSegmentGroup(groupEl, callback) {
   });
 }
 
-// ─── Event Listeners ───
+// Event Listeners
 analyzeBtn.addEventListener("click", startAnalysis);
+
+if (clearCacheBtn) {
+  clearCacheBtn.addEventListener("click", handleClearCache);
+}
 
 [playUrlInput, appstoreUrlInput].forEach(inp => {
   inp.addEventListener("keydown", (e) => {
     if (e.key === "Enter") startAnalysis();
   });
 });
+
+async function handleClearCache() {
+  try {
+    const res = await fetch(`${API_BASE}/cache`, { method: "DELETE" });
+    const data = await res.json();
+    showToast(`VERİTABANI ÖNBELLEĞİ TEMİZLENDİ (${data.deleted_entries || 0} KAYIT SILINDI)`);
+  } catch (err) {
+    showToast("ÖNBELLEK TEMİZLENEMEDİ (SUNUCU BAĞLANTISI YOK)");
+  }
+}
+
+function showToast(msg) {
+  if (!toastMsg) return;
+  toastMsg.textContent = msg;
+  toastMsg.classList.add("visible");
+  setTimeout(() => { toastMsg.classList.remove("visible"); }, 3000);
+}
 
 async function startAnalysis() {
   const playUrl = playUrlInput.value.trim();
@@ -103,7 +126,7 @@ async function startAnalysis() {
   }
 }
 
-// ─── ASCII Bar Telemetry Renderer ───
+// ASCII Bar Telemetry Renderer
 function renderAsciiBar(percent) {
   const totalBlocks = 30;
   const filledBlocks = Math.round((percent / 100) * totalBlocks);
@@ -135,18 +158,18 @@ function updateProgress(percent, message, step) {
 
 function simulateProgress() {
   let current = 5;
-  updateProgress(5, "ÇOKLU_ÜLKE_YORUMLARI_TOPLANIYOR...", "scraping");
+  updateProgress(5, "ÇOKLU ÜLKE YORUMLARI TOPLANIYOR...", "scraping");
 
   progressTimer = setInterval(() => {
     if (current < 45) {
       current += Math.floor(Math.random() * 4) + 2;
-      updateProgress(current, "MAĞAZALARDAN_METİNLİ_VERİLER_ÇEKİLİYOR...", "scraping");
+      updateProgress(current, "MAĞAZALARDAN METİNLİ VERİLER ÇEKİLİYOR...", "scraping");
     } else if (current < 88) {
       current += Math.floor(Math.random() * 2) + 1;
-      updateProgress(current, "AI_DUYGU_VE_PAZAR_ANALİZİ_YAPILIYOR...", "analyzing");
+      updateProgress(current, "AI DUYGU VE PAZAR ANALİZİ YAPILIYOR...", "analyzing");
     } else if (current < 98) {
       current += 1;
-      updateProgress(current, "RAPOR_METRİKLERİ_YAPILANDIRILIYOR...", "report");
+      updateProgress(current, "RAPOR METRİKLERİ YAPILANDIRILIYOR...", "report");
     }
   }, 700);
 }
@@ -158,7 +181,7 @@ function stopProgress() {
   }
 }
 
-// ─── API Request ───
+// API Request
 async function analyzeApp(playUrl, appstoreUrl) {
   const body = {
     play_url: playUrl || null,
@@ -183,7 +206,7 @@ async function analyzeApp(playUrl, appstoreUrl) {
       throw new Error(errData.detail || errData.error || `Sunucu hatası: ${response.status}`);
     }
 
-    updateProgress(100, "ANALİZ_TAMAMLANDI.", "report");
+    updateProgress(100, "ANALİZ TAMAMLANDI.", "report");
     await delay(300);
 
     return response.json();
@@ -193,13 +216,13 @@ async function analyzeApp(playUrl, appstoreUrl) {
   }
 }
 
-// ─── UI Rendering ───
+// UI Rendering
 function showLoading() {
   hideAll();
   loadingSection.classList.add("visible");
   analyzeBtn.disabled = true;
   analyzeBtn.textContent = "İŞLENİYOR...";
-  updateProgress(0, "BAĞLANTI_KURULUYOR...", "scraping");
+  updateProgress(0, "BAĞLANTI KURULUYOR...", "scraping");
 }
 
 function showError(title, detail) {
@@ -216,15 +239,21 @@ function showResults(data) {
   resultsSection.classList.add("visible");
   resetBtn();
 
+  if (data.cached_response) {
+    showToast("SONUÇ VERİTABANI ÖNBELLEĞİNDEN YÜKLENDİ (0.05 SN)");
+  }
+
   const meta = data.metadata || {};
+  const totalRatingsFormatted = (meta.total_ratings || 0).toLocaleString();
+  
   resultAppName.textContent = data.app_name || meta.title || "Bilinmeyen Uygulama";
-  resultMeta.textContent = `${data.total_reviews} metinli yorum işlendi // Platform: ${(data.platform || "").toUpperCase()}`;
+  resultMeta.textContent = `${totalRatingsFormatted} Toplam Mağaza Oylaması // ${data.total_reviews} Metinli Yorum İnceledi // Platform: ${(data.platform || "").toUpperCase()}`;
 
   aiBadge.textContent = (data.ai_provider || "AI").toUpperCase();
 
   // Metrics Grid
-  metricRating.textContent = `⭐ ${meta.average_rating || 0.0}`;
-  metricRatingsCnt.textContent = `${(meta.total_ratings || 0).toLocaleString()} toplam puanlama`;
+  metricRating.textContent = `PUAN: ${meta.average_rating || 0.0} / 5.0`;
+  metricRatingsCnt.textContent = `${totalRatingsFormatted} toplam oylama`;
 
   const sent = data.sentiment_dist || {};
   metricSentiment.textContent = `%${sent.positive_pct || 0}`;
@@ -233,10 +262,10 @@ function showResults(data) {
   metricDeveloper.textContent = meta.developer || "Bilinmiyor";
   metricCategory.textContent = `${meta.category || "Genel"} // Sürüm: ${meta.version || "v1.0"}`;
 
-  metricLength.textContent = `${data.avg_review_length || 0} kr.`;
+  metricLength.textContent = `${data.avg_review_length || 0} karakter`;
 
   // Country Distribution Bar
-  renderCountryBar(data.country_dist || {});
+  renderCountryBar(data.country_dist || {}, data.total_reviews || 0);
 
   // Top Keywords
   renderKeywordsBar(data.top_keywords || []);
@@ -252,21 +281,21 @@ function showResults(data) {
   resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-function renderCountryBar(countryDist) {
+function renderCountryBar(countryDist, totalReviews) {
   countryDistBar.innerHTML = "";
   const pcts = countryDist.percentages || {};
   const cnts = countryDist.counts || {};
 
   const keys = Object.keys(pcts);
   if (!keys.length) {
-    countryDistBar.innerHTML = `<span class="metric-sub">// Coğrafi veri bulunamadı</span>`;
+    countryDistBar.innerHTML = `<span class="metric-sub">Coğrafi veri bulunamadı</span>`;
     return;
   }
 
   keys.forEach(code => {
     const chip = document.createElement("div");
     chip.className = "country-chip";
-    chip.textContent = `${code}: %${pcts[code]} (${cnts[code]} yorum)`;
+    chip.textContent = `${code}: %${pcts[code]} (${cnts[code]} yorum / ${totalReviews} metinli yorum)`;
     countryDistBar.appendChild(chip);
   });
 }
@@ -299,13 +328,13 @@ function renderFeatures(container, countBadge, features) {
   countBadge.textContent = features.length;
 
   if (!features.length) {
-    container.innerHTML = `<div class="empty-category">// Kayıtlı özellik yok</div>`;
+    container.innerHTML = `<div class="empty-category">Kayıtlı özellik yok</div>`;
     return;
   }
 
   features.forEach((f) => {
     const item = document.createElement("div");
-    item.className = "feature-item expanded"; // Varsayılan tam açık kalsın!
+    item.className = "feature-item";
     item.innerHTML = `
       <div class="feature-title">
         <span>${escHtml(f.title)}</span>
@@ -323,7 +352,7 @@ function renderFeatures(container, countBadge, features) {
   });
 }
 
-// ─── Markdown Download ───
+// Markdown Download
 downloadMdBtn.addEventListener("click", () => {
   if (!currentReport) return;
 
@@ -331,15 +360,9 @@ downloadMdBtn.addEventListener("click", () => {
   const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `revixa-${slugify(currentReport.app_name)}-${dateStr()}.md`;
+  a.download = `revixa-${slugify(currentReport.app_name)}-${dateTimeStr()}.md`;
   a.click();
   URL.revokeObjectURL(a.href);
-});
-
-// ─── PDF Export (Print Clean View) ───
-downloadPdfBtn.addEventListener("click", () => {
-  if (!currentReport) return;
-  window.print();
 });
 
 function generateMarkdown(data) {
@@ -358,8 +381,12 @@ function slugify(str) {
   return (str || "rapor").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "").slice(0, 40);
 }
 
-function dateStr() {
-  return new Date().toISOString().slice(0, 10);
+function dateTimeStr() {
+  const d = new Date();
+  const date = d.toISOString().slice(0, 10);
+  const hours = String(d.getHours()).padStart(2, '0');
+  const mins = String(d.getMinutes()).padStart(2, '0');
+  return `${date}_${hours}-${mins}`;
 }
 
 function delay(ms) {

@@ -6,24 +6,25 @@ It utilizes an AI Router mechanism combining Google Gemini Flash with local Olla
 
 ---
 
-## // Purpose
+## Purpose
 
 The primary goal of REVIXA is to provide developers, product managers, and market researchers with instant, actionable product insights derived directly from end-user reviews across global application stores.
 
 ---
 
-## // Core Capabilities
+## Core Capabilities
 
-- **Multi-Store & Dual Link Support**: Simultaneously ingests user reviews from Google Play Store and Apple App Store.
-- **Geographic Telemetry**: Tracks country distribution percentages across international markets (TR, US, DE, GB, FR, BR, IN).
-- **AI Fallback Router**: Primary analysis executed via Gemini 2.0 Flash; automatically switches to local Ollama (Llama 3.2) if rate limits occur.
-- **Market Metrics**: Computes average review character lengths, star rating distributions, and keyword frequency tags.
-- **Structured Export**: Generates printable PDF documents and Markdown (.md) reports.
-- **Minimalist Interface**: Zero-clutter, monochrome user interface with custom segmented controls.
+- Multi-Store & Dual Link Support: Simultaneously ingests user reviews from Google Play Store and Apple App Store.
+- Geographic Telemetry: Tracks country distribution percentages across international markets (TR, US, DE, GB, FR, BR, IN).
+- AI Fallback Router: Primary analysis executed via Gemini Flash; automatically switches to local Ollama (Llama 3.2) if rate limits occur.
+- Market Metrics: Computes average review character lengths, star rating distributions, and keyword frequency tags.
+- Enriched Market Insights: Calculates churn risk percentages, update warning flags, competitor mentions, and feature request rankings.
+- Structured Export: Direct PDF document download and Markdown (.md) report exports.
+- Minimalist Interface: Zero-clutter, monochrome user interface with custom segmented controls and database cache controls.
 
 ---
 
-## // Architecture & File Structure
+## Architecture & File Structure
 
 ```
 revixa/
@@ -31,35 +32,37 @@ revixa/
 │   ├── main.py          # FastAPI application & REST endpoints
 │   ├── analyzer.py      # AI Router (Gemini -> Ollama) & report generator
 │   ├── scraper.py       # Multi-country review & metadata extraction engine
+│   ├── cache.py         # SQLite caching engine with 1-hour TTL
 │   ├── models.py        # Pydantic data schemas & statistics models
 │   └── requirements.txt # Python dependencies
 ├── frontend/
 │   ├── index.html       # Minimalist HTML interface
 │   ├── style.css        # Monochrome design system & print layout
 │   └── app.js           # Client-side telemetry, API fetch & export logic
-├── debug_reviews.py     # Review extraction debug utility
-├── test_scraper.py      # Scraper validation script
-├── test_analyzer.py     # AI Router fallback test script
+├── tests/
+│   └── test_main.py     # Automated pytest integration suite
+├── Dockerfile           # Backend Docker container build
+├── docker-compose.yml   # Full stack single-command startup
+├── nginx.conf           # Static frontend server configuration
 ├── .env                 # Environment configuration
-├── .gitignore           # Git exclusion rules
 └── README.md            # System documentation
 ```
 
 ---
 
-## // Tech Stack
+## Tech Stack
 
-- **Backend**: Python 3.13, FastAPI, Pydantic, HTTPX, google-genai
-- **Frontend**: HTML5, Vanilla JavaScript, CSS3 (Monochrome & Print Layout)
-- **AI Engines**: Google Gemini 2.0 Flash, Ollama (Llama 3.2)
+- Backend: Python 3.13, FastAPI, Pydantic, HTTPX, google-genai, slowapi, SQLite
+- Frontend: HTML5, Vanilla JavaScript, CSS3 (Monochrome & Print Layout), html2pdf.js
+- AI Engines: Google Gemini 2.0 Flash, Ollama (Llama 3.2)
 
 ---
 
-## // Quick Start
+## Quick Start
 
 ### 1. Environment Setup
 
-Copy `.env.example` to `.env` and set your configuration:
+Set your configuration in `.env`:
 
 ```bash
 GEMINI_API_KEY=your_gemini_api_key
@@ -85,6 +88,6 @@ Open `frontend/index.html` in any web browser.
 
 ---
 
-## // License & Credits
+## License & Credits
 
-MIT License. Designed and developed by **blosny**.
+MIT License. Designed and developed by blosny.

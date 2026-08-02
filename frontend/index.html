@@ -11,7 +11,7 @@
 </head>
 <body>
 
-  <!-- ─── Header ─── -->
+  <!-- Header -->
   <header class="header">
     <div class="logo">
       <span class="logo-text">REVIXA</span>
@@ -22,7 +22,7 @@
     </p>
   </header>
 
-  <!-- ─── Main ─── -->
+  <!-- Main -->
   <main>
     <div class="container">
 
@@ -33,7 +33,7 @@
           <div class="dual-input-grid">
             <div class="input-field-group">
               <label class="input-label" for="play-url-input">
-                // GOOGLE_PLAY_STORE_BAĞLANTISI
+                GOOGLE PLAY STORE BAĞLANTISI
               </label>
               <input
                 type="url"
@@ -45,9 +45,11 @@
               />
             </div>
 
+            <div class="input-divider"></div>
+
             <div class="input-field-group">
               <label class="input-label" for="appstore-url-input">
-                // APPLE_APP_STORE_BAĞLANTISI (OPSİYONEL)
+                APPLE APP STORE BAĞLANTISI (OPSİYONEL)
               </label>
               <input
                 type="url"
@@ -73,19 +75,24 @@
               </div>
             </div>
 
-            <button id="analyze-btn" class="analyze-btn">
-              ANALİZ ET
-            </button>
+            <div class="action-buttons-group">
+              <button id="clear-cache-btn" class="clear-cache-btn" title="Veritabanı önbelleğini temizler">
+                ÖNBELLEĞİ TEMİZLE
+              </button>
+              <button id="analyze-btn" class="analyze-btn">
+                ANALİZ ET
+              </button>
+            </div>
           </div>
 
         </div>
       </section>
 
-      <!-- Custom Minimalist Cyber Telemetry Loading -->
+      <!-- Custom Minimalist Telemetry Loading -->
       <section id="loading-section" class="loading-section">
         <div class="telemetry-card">
           <div class="telemetry-header">
-            <span class="telemetry-title">// PAZAR_TELEMETRİSİ_İŞLENİYOR</span>
+            <span class="telemetry-title">PAZAR TELEMETRİSİ İŞLENİYOR</span>
             <span id="progress-percent" class="telemetry-percent">00%</span>
           </div>
 
@@ -95,13 +102,13 @@
 
           <div class="log-ticker">
             <span class="ticker-prefix">&gt;&gt;</span>
-            <span id="loading-msg" class="ticker-msg">BAĞLANTI_KURULUYOR...</span>
+            <span id="loading-msg" class="ticker-msg">BAĞLANTI KURULUYOR...</span>
           </div>
 
           <div class="loading-steps">
-            <div id="step-scraping" class="loading-step">[1] ÇOKLU_ÜLKE_SCRAPING</div>
-            <div id="step-analyzing" class="loading-step">[2] AI_DUYGU_VE_PAZAR_ANALİZİ</div>
-            <div id="step-report" class="loading-step">[3] RAPOR_YAPILANDIRMA</div>
+            <div id="step-scraping" class="loading-step">[1] ÇOKLU ÜLKE SCRAPING</div>
+            <div id="step-analyzing" class="loading-step">[2] AI DUYGU VE PAZAR ANALİZİ</div>
+            <div id="step-report" class="loading-step">[3] RAPOR YAPILANDIRMA</div>
           </div>
         </div>
       </section>
@@ -114,6 +121,9 @@
         </div>
       </section>
 
+      <!-- Notification Toast -->
+      <div id="toast-message" class="toast-message"></div>
+
       <!-- Results Section -->
       <section id="results-section" class="results-section">
 
@@ -125,11 +135,8 @@
           </div>
           <div class="app-info-right">
             <span id="ai-badge" class="ai-badge">GEMINI</span>
-            <button id="download-md-btn" class="download-btn">
-              RAPOR (.MD)
-            </button>
-            <button id="download-pdf-btn" class="download-btn highlight">
-              RAPOR (.PDF)
+            <button id="download-md-btn" class="download-btn highlight">
+              RAPORU İNDİR (.MD)
             </button>
           </div>
         </div>
@@ -141,25 +148,25 @@
           <div class="metrics-grid">
             
             <div class="metric-card">
-              <div class="metric-title">// ORTALAMA PUAN</div>
+              <div class="metric-title">ORTALAMA PUAN</div>
               <div id="metric-rating" class="metric-value">—</div>
               <div id="metric-ratings-count" class="metric-sub">—</div>
             </div>
 
             <div class="metric-card">
-              <div class="metric-title">// DUYGU DAĞILIMI</div>
+              <div class="metric-title">DUYGU DAĞILIMI</div>
               <div id="metric-sentiment" class="metric-value">—</div>
               <div id="metric-sentiment-sub" class="metric-sub">—</div>
             </div>
 
             <div class="metric-card">
-              <div class="metric-title">// UYGULAMA KİMLİĞİ</div>
+              <div class="metric-title">UYGULAMA KİMLİĞİ</div>
               <div id="metric-developer" class="metric-value-sm">—</div>
               <div id="metric-category" class="metric-sub">—</div>
             </div>
 
             <div class="metric-card">
-              <div class="metric-title">// ORTALAMA YORUM UZUNLUĞU</div>
+              <div class="metric-title">ORTALAMA YORUM UZUNLUĞU</div>
               <div id="metric-length" class="metric-value">—</div>
               <div class="metric-sub">Karakter / Yorum</div>
             </div>
@@ -168,14 +175,14 @@
 
           <!-- Country Breakdown & Top Keywords Bar -->
           <div class="telemetry-bar-card">
-            <div class="summary-title">// COĞRAFİ ÜLKE DAĞILIMI & EN ÇOK TEKRARLANAN KELİMELER</div>
+            <div class="summary-title">COĞRAFİ ÜLKE DAĞILIMI VE EN ÇOK TEKRARLANAN KELİMELER</div>
             <div id="country-distribution-bar" class="country-distribution-bar"></div>
             <div id="keywords-list-bar" class="keywords-list-bar"></div>
           </div>
 
           <!-- Executive Summary -->
           <div id="summary-card" class="summary-card">
-            <div class="summary-title">// GENEL PAZAR ANALİZ ÖZETİ</div>
+            <div class="summary-title">GENEL PAZAR ANALİZ ÖZETİ</div>
             <p id="summary-text" class="summary-text">—</p>
           </div>
 
@@ -218,7 +225,7 @@
     </div>
   </main>
 
-  <!-- ─── Footer Signature ─── -->
+  <!-- Footer Signature -->
   <footer class="footer-credit">
     <a href="https://github.com/blosny" target="_blank" rel="noopener noreferrer" class="credit-link">
       by blosny
