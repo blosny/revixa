@@ -305,11 +305,11 @@ function renderFeatures(container, countBadge, features) {
 
   features.forEach((f) => {
     const item = document.createElement("div");
-    item.className = "feature-item";
+    item.className = "feature-item expanded"; // Varsayılan tam açık kalsın!
     item.innerHTML = `
       <div class="feature-title">
         <span>${escHtml(f.title)}</span>
-        ${f.review_count ? `<span class="feature-review-count">[${f.review_count}]</span>` : ""}
+        ${f.review_count ? `<span class="feature-review-count">[${f.review_count} Yorum]</span>` : ""}
       </div>
       <div class="feature-desc">${escHtml(f.description)}</div>
       ${f.example_quotes?.length ? `
@@ -318,12 +318,6 @@ function renderFeatures(container, countBadge, features) {
         </div>
       ` : ""}
     `;
-
-    if (f.example_quotes?.length) {
-      item.addEventListener("click", () => {
-        item.classList.toggle("expanded");
-      });
-    }
 
     container.appendChild(item);
   });
@@ -345,8 +339,6 @@ downloadMdBtn.addEventListener("click", () => {
 // ─── PDF Export (Print Clean View) ───
 downloadPdfBtn.addEventListener("click", () => {
   if (!currentReport) return;
-  // Bütün alıntıları aç ve baskı penceresini başlat
-  document.querySelectorAll(".feature-item").forEach(el => el.classList.add("expanded"));
   window.print();
 });
 

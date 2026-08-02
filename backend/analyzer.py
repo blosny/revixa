@@ -21,52 +21,51 @@ from models import (
 logger = logging.getLogger("revixa.analyzer")
 
 # ─────────────────────────────────────────────
-#  Prompt
+#  Prompt (Şablon Metinler Kaldırıldı!)
 # ─────────────────────────────────────────────
 
 ANALYSIS_PROMPT = """Sen uzman bir mobil uygulama pazar analistisin. Sana verilen kullanıcı yorumlarını inceleyip pazar analizi raporu çıkaracaksın.
 
-GÖREVİN:
-Yorumları oku ve aşağıdaki 3 kategoride EN AZ 2-5 somut konu/özellik çıkar:
-1. "liked": Kullanıcıların övdüğü ve beğendiği özellikler
-2. "needs_improve": Kullanıcıların geliştirilmesini veya yeni eklenmesini istediği konular
-3. "bad": Kullanıcıların şikayet ettiği, hata/bug olan veya beğenilmeyen konular
+GÖREVİN VE KESİN KURALLARIN:
+1. Yorumları dikkatle incele ve aşağıdaki 3 kategoride EN AZ 2-5 somut konu/özellik çıkar.
+2. "summary": Yorumlardan yola çıkarak uygulamanın genel durumunu anlatan ÖZGÜN ve GERÇEK 2-3 cümlelik Türkçe değerlendirme özeti yaz.
+3. "example_quotes": Özellik hakkındaki GERÇEK kullanıcı yorumlarının TAM CÜMLELERİNİ kesmeden tırnak içinde alıntıla. Kesinlikle "alıntı 1", "örnek yorum" gibi jenerik/sahte metinler YAZMA! Gerçek yorum metnini kopyala.
 
-HER ZAMAN SADECE AŞAĞIDAKİ GEÇERLİ JSON FORMATINI DÖNDÜR (Başka hiçbir açıklama yazma):
+HER ZAMAN SADECE AŞAĞIDAKİ GEÇERLİ JSON YAPISINI DÖNDÜR:
 
 {
-  "summary": "Uygulama hakkında detaylı 2-3 cümlelik Türkçe genel pazar değerlendirme özeti.",
+  "summary": "",
   "liked": [
     {
-      "title": "Beğenilen Özellik Adı",
-      "description": "Kullanıcıların bu özelliği neden beğendiğinin açıklaması",
-      "review_count": 3,
-      "example_quotes": ["Kullanıcı yorumu alıntısı 1"]
+      "title": "",
+      "description": "",
+      "review_count": 0,
+      "example_quotes": []
     }
   ],
   "needs_improve": [
     {
-      "title": "Geliştirilmesi Gereken Konu",
-      "description": "Kullanıcıların neyin eklenmesini istediğinin açıklaması",
-      "review_count": 2,
-      "example_quotes": ["Kullanıcı yorumu alıntısı 2"]
+      "title": "",
+      "description": "",
+      "review_count": 0,
+      "example_quotes": []
     }
   ],
   "bad": [
     {
-      "title": "Hata veya Şikayet Konusu",
-      "description": "Kullanıcıların yaşadığı sorunun açıklaması",
-      "review_count": 2,
-      "example_quotes": ["Kullanıcı yorumu alıntısı 3"]
+      "title": "",
+      "description": "",
+      "review_count": 0,
+      "example_quotes": []
     }
   ]
 }
 
-ANALİZ EDİLECEK YORUMLAR:
+ANALİZ EDİLECEK GERÇEK KULLANICI YORUMLARI:
 """
 
 
-def _build_reviews_text(reviews: list[RawReview], max_chars: int = 6000) -> str:
+def _build_reviews_text(reviews: list[RawReview], max_chars: int = 15000) -> str:
     lines = []
     total = 0
     for i, r in enumerate(reviews, 1):
@@ -79,7 +78,6 @@ def _build_reviews_text(reviews: list[RawReview], max_chars: int = 6000) -> str:
 
 
 def calculate_sentiment_distribution(reviews: list[RawReview]) -> SentimentDistribution:
-    """Yorum puanlarına göre pozitif, nötr ve negatif duygu oranlarını hesaplar."""
     if not reviews:
         return SentimentDistribution()
 
@@ -107,19 +105,29 @@ def _parse_ai_response(raw: str, app_name: str, platform: Platform,
     try:
         data = json.loads(json_str)
     except json.JSONDecodeError as e:
-        logger.error(f"JSON Parse Hatası. Ham metin:\n{text[:300]}...")
-        data = {"summary": "Analiz tamamlandı.", "liked": [], "needs_improve": [], "bad": []}
+        logger.error(f"JSON Parse Hatası: {e}. Ham metin:\n{text[:300]}...")
+        data = {}
 
     def parse_features(items: list) -> list[FeatureItem]:
         result = []
         for item in (items or []):
+            title = item.get("title", "").strip()
+            if not title or "başlık" in title.lower():
+                continue
+            quotes = [q for q in item.get("example_quotes", []) if isinstance(q, str) and len(q) > 3 and "alıntı" not in q.lower()]
             result.append(FeatureItem(
-                title=item.get("title", "Genel Özellik"),
+                title=title,
                 description=item.get("description", ""),
                 review_count=int(item.get("review_count", 1)),
-                example_quotes=item.get("example_quotes", []),
+                example_quotes=quotes,
             ))
         return result
+
+    summary = (data.get("summary") or "").strip()
+    if not summary or "özeti" in summary.lower() and len(summary) < 80:
+        # Fallback özgün özet
+        pos_cnt = sum(1 for r in reviews if r.rating >= 4)
+        summary = f"Kullanıcılar uygulamayı genel olarak değerlendirdi. Toplam {total_reviews} metinli yorum içinden {pos_cnt} kullanıcı olumlu geri bildirimde bulundu."
 
     sentiment = calculate_sentiment_distribution(reviews)
 
@@ -134,7 +142,7 @@ def _parse_ai_response(raw: str, app_name: str, platform: Platform,
         country_dist=country_dist,
         top_keywords=keywords,
         avg_review_length=avg_len,
-        summary=data.get("summary", "Pazar analizi özeti hazırlandı."),
+        summary=summary,
         liked=parse_features(data.get("liked", [])),
         needs_improve=parse_features(data.get("needs_improve", [])),
         bad=parse_features(data.get("bad", [])),
@@ -145,7 +153,7 @@ def _parse_ai_response(raw: str, app_name: str, platform: Platform,
 
 
 # ─────────────────────────────────────────────
-#  Gemini Analyzer
+#  Gemini Analyzer (google-genai SDK)
 # ─────────────────────────────────────────────
 
 class GeminiAnalyzer:
@@ -156,7 +164,7 @@ class GeminiAnalyzer:
         try:
             from google import genai
             self.client = genai.Client(api_key=api_key)
-            self.model_name = "gemini-2.0-flash"
+            self.model_name = "gemini-flash-latest"
         except ImportError:
             raise RuntimeError("google-genai paketi bulunamadı.")
 
@@ -164,15 +172,34 @@ class GeminiAnalyzer:
                 metadata: AppMetadata, rating_dist: RatingDistribution,
                 country_dist: CountryDistribution, avg_len: int,
                 keywords: list[KeywordCount]) -> AnalysisResult:
-        reviews_text = _build_reviews_text(reviews)
+        reviews_text = _build_reviews_text(reviews, max_chars=30000)
         prompt = ANALYSIS_PROMPT + reviews_text
 
-        logger.info(f"Gemini analizi başlatılıyor ({len(reviews)} yorum)...")
-        response = self.client.models.generate_content(
-            model=self.model_name,
-            contents=prompt,
-        )
-        raw = response.text
+        logger.info(f"Gemini analizi başlatılıyor ({len(reviews)} yorum, model: {self.model_name})...")
+        
+        raw = None
+        last_err = None
+        for attempt in range(1, 4):
+            try:
+                response = self.client.models.generate_content(
+                    model=self.model_name,
+                    contents=prompt,
+                )
+                raw = response.text
+                break
+            except Exception as e:
+                last_err = e
+                if "RESOURCE_EXHAUSTED" in str(e) or "429" in str(e):
+                    logger.warning(f"Gemini 429 Rate Limit (Deneme {attempt}/3). 5 saniye bekleniyor...")
+                    import time
+                    time.sleep(5)
+                else:
+                    raise e
+
+        if not raw:
+            raise last_err
+
+        logger.info("Gemini yanıtı alındı, parse ediliyor...")
 
         return _parse_ai_response(
             raw, app_name, platform, len(reviews), AIProvider.GEMINI,
@@ -204,7 +231,7 @@ class OllamaAnalyzer:
                 metadata: AppMetadata, rating_dist: RatingDistribution,
                 country_dist: CountryDistribution, avg_len: int,
                 keywords: list[KeywordCount]) -> AnalysisResult:
-        reviews_text = _build_reviews_text(reviews, max_chars=6000)
+        reviews_text = _build_reviews_text(reviews, max_chars=8000)
         prompt = ANALYSIS_PROMPT + reviews_text
 
         logger.info(f"Ollama analizi başlatılıyor ({len(reviews)} yorum)...")
@@ -215,7 +242,7 @@ class OllamaAnalyzer:
                 json={
                     "model": self.model,
                     "prompt": prompt,
-                    "system": "Sen uzman bir mobil uygulama pazar analistisin. Yanıtını SADECE geçerli JSON formatında döndür. Hiçbir ekstra açıklama yazma.",
+                    "system": "Sen uzman bir mobil uygulama pazar analistisin. Kullanıcı yorumlarındaki GERÇEK alıntı cümlelerini eksiksiz koy. Yanıtını SADECE geçerli JSON formatında döndür.",
                     "format": "json",
                     "stream": False,
                     "options": {
@@ -243,6 +270,7 @@ class AIRouter:
         self._ollama = OllamaAnalyzer()
         try:
             self._gemini = GeminiAnalyzer()
+            logger.info("Gemini Analyzer başarıyla yüklendi.")
         except Exception as e:
             logger.warning(f"Gemini başlatılamadı: {e}")
 
@@ -254,9 +282,10 @@ class AIRouter:
             try:
                 return self._gemini.analyze(reviews, app_name, platform, metadata, rating_dist, country_dist, avg_len, keywords)
             except Exception as e:
-                logger.warning(f"Gemini hatası: {e} → Ollama'ya geçiliyor...")
+                logger.warning(f"⚠️  Gemini hatası: {e} → Ollama'ya geçiliyor...")
 
         if self._ollama.is_available():
+            logger.info("🦙 Ollama kullanılıyor...")
             return self._ollama.analyze(reviews, app_name, platform, metadata, rating_dist, country_dist, avg_len, keywords)
 
         raise RuntimeError("Hiçbir AI servisi kullanılamıyor.")
@@ -302,7 +331,7 @@ def _build_markdown_report(result: AnalysisResult) -> str:
         "",
         "#### Duygu Analizi Oranları:",
         f"- 🟢 **Pozitif Yorumlar:** %{result.sentiment_dist.positive_pct}",
-        f"- 🟡 **Nötr Yorumlar:** %{result.sentiment_dist.neutral_pct}",
+        f"- 🟡 **Nötr Yorumlar:** %{result.sentiment_dist.negative_pct}",
         f"- 🔴 **Negatif Yorumlar:** %{result.sentiment_dist.negative_pct}",
         "",
         "#### Coğrafi Ülke Dağılımı (%):",
@@ -342,6 +371,7 @@ def _build_markdown_report(result: AnalysisResult) -> str:
             out.append(f"{f.description}")
             if f.example_quotes:
                 out.append("")
+                out.append("**Gerçek Kullanıcı Yorum Alıntıları:**")
                 for q in f.example_quotes:
                     out.append(f'> "{q}"')
             out.append("")
@@ -350,7 +380,7 @@ def _build_markdown_report(result: AnalysisResult) -> str:
     lines += fmt_features(result.liked)
     lines += ["### 🟡 5. GELİŞTİRİLMESİ GEREKEN KONULAR", ""]
     lines += fmt_features(result.needs_improve)
-    lines += ["### 🔴 6. KÖTÜ VE EKSİK BULDUTAN BÖLÜMLER / ŞİKAYETLER", ""]
+    lines += ["### 🔴 6. KÖTÜ VE EKSİK BULUNAN BÖLÜMLER / ŞİKAYETLER", ""]
     lines += fmt_features(result.bad)
 
     lines += [
