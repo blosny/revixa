@@ -1,8 +1,21 @@
-# REVIXA — Mobile Application Market Intelligence
+# REVIXA — Minimalist Mobile Market Intelligence
 
 REVIXA is an automated market research and sentiment analysis engine designed to extract, analyze, and structure user feedback from Google Play Store and Apple App Store.
 
 It utilizes an AI Router mechanism combining Google Gemini Flash with local Ollama fallback to categorize user sentiment, geographic telemetry, rating distributions, and product feature requests without service interruption.
+
+---
+
+## Interface Showcase
+
+### 1. Minimalist Input Interface
+![REVIXA Hero Interface](docs/screenshots/01-hero-interface.png)
+
+### 2. Market Metrics & Geographic Telemetry
+![REVIXA Market Metrics](docs/screenshots/03-market-metrics.png)
+
+### 3. AI Categorized User Insights & Real Quotes
+![REVIXA Categorized Insights](docs/screenshots/04-categorized-insights.png)
 
 ---
 
@@ -19,7 +32,7 @@ The primary goal of REVIXA is to provide developers, product managers, and marke
 - AI Fallback Router: Primary analysis executed via Gemini Flash; automatically switches to local Ollama (Llama 3.2) if rate limits occur.
 - Market Metrics: Computes average review character lengths, star rating distributions, and keyword frequency tags.
 - Enriched Market Insights: Calculates churn risk percentages, update warning flags, competitor mentions, and feature request rankings.
-- Structured Export: Direct PDF document download and Markdown (.md) report exports.
+- Structured Export: Download timestamped Markdown (.md) reports.
 - Minimalist Interface: Zero-clutter, monochrome user interface with custom segmented controls and database cache controls.
 
 ---
@@ -37,8 +50,10 @@ revixa/
 │   └── requirements.txt # Python dependencies
 ├── frontend/
 │   ├── index.html       # Minimalist HTML interface
-│   ├── style.css        # Monochrome design system & print layout
+│   ├── style.css        # Monochrome design system
 │   └── app.js           # Client-side telemetry, API fetch & export logic
+├── docs/
+│   └── screenshots/     # Showcase screenshots for README
 ├── tests/
 │   └── test_main.py     # Automated pytest integration suite
 ├── Dockerfile           # Backend Docker container build
@@ -53,7 +68,7 @@ revixa/
 ## Tech Stack
 
 - Backend: Python 3.13, FastAPI, Pydantic, HTTPX, google-genai, slowapi, SQLite
-- Frontend: HTML5, Vanilla JavaScript, CSS3 (Monochrome & Print Layout), html2pdf.js
+- Frontend: HTML5, Vanilla JavaScript, CSS3 (Monochrome Design System)
 - AI Engines: Google Gemini 2.0 Flash, Ollama (Llama 3.2)
 
 ---
