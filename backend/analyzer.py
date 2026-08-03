@@ -195,7 +195,7 @@ class GeminiAnalyzer:
                 metadata: AppMetadata, rating_dist: RatingDistribution,
                 country_dist: CountryDistribution, avg_len: int,
                 keywords: list[KeywordCount]) -> AnalysisResult:
-        reviews_text = _build_reviews_text(reviews, max_chars=25000)
+        reviews_text = _build_reviews_text(reviews, max_chars=12000)
         prompt = ANALYSIS_PROMPT + reviews_text
 
         models_to_try = [self.model_name, "gemini-1.5-flash", "gemini-flash-latest"]
