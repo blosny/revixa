@@ -198,7 +198,7 @@ class GeminiAnalyzer:
         reviews_text = _build_reviews_text(reviews, max_chars=12000)
         prompt = ANALYSIS_PROMPT + reviews_text
 
-        models_to_try = [self.model_name, "gemini-1.5-flash", "gemini-flash-latest"]
+        models_to_try = ["gemini-3.6-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-flash-latest"]
         raw = None
         last_err = None
 
