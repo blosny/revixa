@@ -2,7 +2,7 @@
 
 REVIXA is an automated market research and sentiment analysis engine designed to extract, analyze, and structure user feedback from Google Play Store and Apple App Store.
 
-It utilizes an AI Router mechanism combining Google Gemini Flash with local Ollama fallback to categorize user sentiment, geographic telemetry, rating distributions, and product feature requests without service interruption.
+It utilizes an AI Router mechanism combining Google Gemini 2.5 Flash with local Ollama fallback (Llama 3.2 / Qwen 2.5) to categorize user sentiment, geographic telemetry, rating distributions, and product feature requests without service interruption.
 
 ---
 
@@ -29,7 +29,7 @@ The primary goal of REVIXA is to provide developers, product managers, and marke
 
 - Multi-Store & Dual Link Support: Simultaneously ingests user reviews from Google Play Store and Apple App Store.
 - Geographic Telemetry: Tracks country distribution percentages across international markets (TR, US, DE, GB, FR, BR, IN).
-- AI Fallback Router: Primary analysis executed via Gemini Flash; automatically switches to local Ollama (Llama 3.2) if rate limits occur.
+- AI Fallback Router: Primary analysis executed via Gemini 2.5 Flash; automatically switches to local Ollama (Llama 3.2 / Qwen 2.5) if rate limits or network issues occur.
 - Market Metrics: Computes average review character lengths, star rating distributions, and keyword frequency tags.
 - Enriched Market Insights: Calculates churn risk percentages, update warning flags, competitor mentions, and feature request rankings.
 - Structured Export: Download timestamped Markdown (.md) reports.
@@ -59,7 +59,7 @@ revixa/
 ├── Dockerfile           # Backend Docker container build
 ├── docker-compose.yml   # Full stack single-command startup
 ├── nginx.conf           # Static frontend server configuration
-├── .env                 # Environment configuration
+├── .env.example         # Environment template
 └── README.md            # System documentation
 ```
 
@@ -69,7 +69,7 @@ revixa/
 
 - Backend: Python 3.13, FastAPI, Pydantic, HTTPX, google-genai, slowapi, SQLite
 - Frontend: HTML5, Vanilla JavaScript, CSS3 (Monochrome Design System)
-- AI Engines: Google Gemini 2.0 Flash, Ollama (Llama 3.2)
+- AI Engines: Google Gemini 2.5 Flash, Ollama (Llama 3.2 / Qwen 2.5)
 
 ---
 
@@ -77,20 +77,24 @@ revixa/
 
 ### 1. Environment Setup
 
-Set your configuration in `.env`:
+Create `.env` from template:
 
 ```bash
-GEMINI_API_KEY=your_gemini_api_key
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.2
+cp .env.example .env
 ```
+
+> **IMPORTANT:** REVIXA requires at least **ONE** active AI provider:
+> - **Option A (Cloud AI):** Add your free Gemini API key to `.env` (`GEMINI_API_KEY=your_key`).
+> - **Option B (Local Offline AI):** If no API key is provided, install [Ollama](https://ollama.com/) and run `ollama run llama3.2` (or `ollama run qwen2.5:7b`) in your terminal before launching the backend.
 
 ### 2. Backend Server Initialization
 
 ```bash
 # Create virtual environment & install dependencies
 python -m venv venv
-venv\Scripts\activate
+venv\Scripts\activate      # Windows
+# source venv/bin/activate # Linux/Mac
+
 pip install -r backend/requirements.txt
 
 # Start FastAPI server

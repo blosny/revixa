@@ -187,7 +187,7 @@ class GeminiAnalyzer:
         try:
             from google import genai
             self.client = genai.Client(api_key=api_key)
-            self.model_name = "gemini-2.5-flash"
+            self.model_name = "gemini-2.0-flash"
         except ImportError:
             raise RuntimeError("google-genai paketi bulunamadı.")
 
@@ -195,32 +195,40 @@ class GeminiAnalyzer:
                 metadata: AppMetadata, rating_dist: RatingDistribution,
                 country_dist: CountryDistribution, avg_len: int,
                 keywords: list[KeywordCount]) -> AnalysisResult:
-        reviews_text = _build_reviews_text(reviews, max_chars=30000)
+        reviews_text = _build_reviews_text(reviews, max_chars=25000)
         prompt = ANALYSIS_PROMPT + reviews_text
 
-        logger.info(f"Gemini analizi başlatılıyor ({len(reviews)} yorum, model: {self.model_name})...")
-        
+        models_to_try = [self.model_name, "gemini-1.5-flash", "gemini-flash-latest"]
         raw = None
         last_err = None
-        for attempt in range(1, 4):
-            try:
-                response = self.client.models.generate_content(
-                    model=self.model_name,
-                    contents=prompt,
-                )
-                raw = response.text
+
+        for model in models_to_try:
+            logger.info(f"Gemini analizi başlatılıyor ({len(reviews)} yorum, model: {model})...")
+            for attempt in range(1, 4):
+                try:
+                    response = self.client.models.generate_content(
+                        model=model,
+                        contents=prompt,
+                    )
+                    raw = response.text
+                    break
+                except Exception as e:
+                    last_err = e
+                    err_msg = str(e)
+                    if "RESOURCE_EXHAUSTED" in err_msg or "429" in err_msg:
+                        logger.warning(f"Gemini {model} 429 Rate Limit (Deneme {attempt}/3). 3 saniye bekleniyor...")
+                        import time
+                        time.sleep(3)
+                    elif "NOT_FOUND" in err_msg or "404" in err_msg:
+                        logger.warning(f"Gemini model {model} bulunamadı, sonraki modele geçiliyor...")
+                        break
+                    else:
+                        break
+            if raw:
                 break
-            except Exception as e:
-                last_err = e
-                if "RESOURCE_EXHAUSTED" in str(e) or "429" in str(e):
-                    logger.warning(f"Gemini 429 Rate Limit (Deneme {attempt}/3). 4 saniye bekleniyor...")
-                    import time
-                    time.sleep(4)
-                else:
-                    raise e
 
         if not raw:
-            raise last_err
+            raise last_err or RuntimeError("Gemini modellerinden yanıt alınamadı.")
 
         logger.info("Gemini yanıtı alındı, parse ediliyor...")
 
