@@ -42,3 +42,6 @@ Thumbs.db
 
 # Temporary test outputs
 test_result/
+
+# Agents & Customization Rules
+.agents/

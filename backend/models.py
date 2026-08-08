@@ -1,12 +1,13 @@
 """
 Revixa — Pydantic Data Models & Market Metrics
 ===============================================
-Tüm API veri yapıları, Zenginleştirilmiş Pazar Analizi Şemaları ve Güvenlik Modelleri.
+Tüm API veri yapıları, Zenginleştirilmiş Pazar Analizi Şemaları, Kullanıcı ve Kimlik Doğrulama Modelleri.
 """
 
 from enum import Enum
+from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr, ConfigDict
 
 
 class Platform(str, Enum):
@@ -19,6 +20,9 @@ class Platform(str, Enum):
 class AIProvider(str, Enum):
     GEMINI = "gemini"
     OLLAMA = "ollama"
+    OPENAI = "openai"
+    CLAUDE = "claude"
+    DEEPSEEK = "deepseek"
     NONE = "none"
 
 
@@ -86,6 +90,10 @@ class AnalysisRequest(BaseModel):
     appstore_url: Optional[str] = None
     platform: Platform = Platform.AUTO
     max_reviews: int = Field(default=0, ge=0)
+    
+    # Revixa v2: Özel Prompt ve LLM Provider Özelleştirme
+    custom_prompt_extension: Optional[str] = None
+    preferred_llm_provider: Optional[AIProvider] = None
 
 
 class AnalysisResult(BaseModel):
@@ -102,11 +110,11 @@ class AnalysisResult(BaseModel):
     top_keywords: list[KeywordCount] = Field(default_factory=list)
     avg_review_length: int = 0
     
-    # 🚀 ZENGİNLEŞTİRİLMİŞ YENİ PAZAR İÇGÖRÜLERİ
-    churn_risk_score: float = 0.0          # 0 - 100 Arası Müşteri Kayıp Riski Skoru
-    version_issue_warning: str = ""       # Güncelleme Sonrası Hata Uyarısı
-    competitor_mentions: list[CompetitorMention] = Field(default_factory=list) # Rakip Bahisleri
-    feature_rankings: list[str] = Field(default_factory=list)                   # En Çok İstenen Özellik Sıralaması
+    # Zenginleştirilmiş Pazar İçgörüleri
+    churn_risk_score: float = 0.0
+    version_issue_warning: str = ""
+    competitor_mentions: list[CompetitorMention] = Field(default_factory=list)
+    feature_rankings: list[str] = Field(default_factory=list)
     
     # AI Kategorizasyonu
     summary: str
@@ -129,3 +137,42 @@ class AIStatus(BaseModel):
 class ErrorResponse(BaseModel):
     error: str
     detail: str
+
+
+# ─────────────────────────────────────────────
+#  Revixa v2: User, Auth & Saved Apps Schemas
+# ─────────────────────────────────────────────
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=6)
+
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class SavedAppCreate(BaseModel):
+    title: str
+    play_url: Optional[str] = None
+    appstore_url: Optional[str] = None
+
+
+class SavedAppResponse(BaseModel):
+    id: int
+    user_id: int
+    title: str
+    play_url: Optional[str]
+    appstore_url: Optional[str]
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
