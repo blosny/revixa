@@ -10,3 +10,5 @@ slowapi>=0.1.9
 sqlalchemy>=2.0.0
 passlib[bcrypt]>=1.7.4
 pyjwt>=2.8.0
+pytest>=8.0.0
+pytest-asyncio>=0.23.0

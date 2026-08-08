@@ -27,7 +27,7 @@ jobs:
 
       - name: Run Pytest Suite
         run: |
-          pytest tests/
+          python -m pytest tests/
 
       - name: Build Docker Container Check
         run: |
