@@ -1,11 +1,11 @@
 /**
  * Revixa v2 — Minimalist Market Intelligence & PDF/MD Report Generator
- * Auth, Custom Prompt Extension, and Saved Apps Dashboard Integration.
+ * Auth, Custom Prompt Extension, Saved Apps Dashboard & Multilingual (TR/EN) Integration.
  */
 
 const API_BASE = "http://localhost:8000";
 
-// DOM References
+// DOM References (MUST BE DECLARED FIRST)
 const playUrlInput      = document.getElementById("play-url-input");
 const appstoreUrlInput  = document.getElementById("appstore-url-input");
 const customPromptInput = document.getElementById("custom-prompt-input");
@@ -37,21 +37,21 @@ const downloadMdBtn   = document.getElementById("download-md-btn");
 const saveAppBtn      = document.getElementById("save-app-btn");
 
 // Auth DOM
-const openAuthModalBtn = document.getElementById("open-auth-modal-btn");
+const openAuthModalBtn  = document.getElementById("open-auth-modal-btn");
 const closeAuthModalBtn = document.getElementById("close-auth-modal-btn");
-const authModal        = document.getElementById("auth-modal");
-const authForm         = document.getElementById("auth-form");
-const authEmail        = document.getElementById("auth-email");
-const authPassword     = document.getElementById("auth-password");
-const authSubmitBtn    = document.getElementById("auth-submit-btn");
+const authModal         = document.getElementById("auth-modal");
+const authForm          = document.getElementById("auth-form");
+const authEmail         = document.getElementById("auth-email");
+const authPassword      = document.getElementById("auth-password");
+const authSubmitBtn     = document.getElementById("auth-submit-btn");
 
-const tabLoginBtn      = document.getElementById("tab-login-btn");
-const tabRegisterBtn   = document.getElementById("tab-register-btn");
+const tabLoginBtn       = document.getElementById("tab-login-btn");
+const tabRegisterBtn    = document.getElementById("tab-register-btn");
 
-const loggedOutView    = document.getElementById("logged-out-view");
-const loggedInView     = document.getElementById("logged-in-view");
-const userEmailDisplay = document.getElementById("user-email-display");
-const logoutBtn        = document.getElementById("logout-btn");
+const loggedOutView     = document.getElementById("logged-out-view");
+const loggedInView      = document.getElementById("logged-in-view");
+const userEmailDisplay  = document.getElementById("user-email-display");
+const logoutBtn         = document.getElementById("logout-btn");
 
 // Saved Apps DOM
 const openAppsModalBtn  = document.getElementById("open-apps-modal-btn");
@@ -72,6 +72,9 @@ const countryDistBar  = document.getElementById("country-distribution-bar");
 const keywordsListBar = document.getElementById("keywords-list-bar");
 const summaryText     = document.getElementById("summary-text");
 
+const customFocusCard = document.getElementById("custom-focus-card");
+const customFocusText = document.getElementById("custom-focus-text");
+
 const likedList   = document.getElementById("liked-list");
 const improveList = document.getElementById("improve-list");
 const badList     = document.getElementById("bad-list");
@@ -79,6 +82,112 @@ const badList     = document.getElementById("bad-list");
 const likedCount   = document.getElementById("liked-count");
 const improveCount = document.getElementById("improve-count");
 const badCount     = document.getElementById("bad-count");
+
+// i18n Translations Dictionary
+const translations = {
+  tr: {
+    auth_btn: "GİRİŞ YAP / KAYIT OL",
+    my_apps: "UYGULAMALARIM",
+    logout: "ÇIKIŞ YAP",
+    tagline: "Google Play Store veya App Store URL'si girin — yapay zeka pazar metriklerini,<br>coğrafi dağılımı ve kullanıcı içgörüsünü anında raporlasın.",
+    play_label: "GOOGLE PLAY STORE BAĞLANTISI",
+    appstore_label: "APPLE APP STORE BAĞLANTISI",
+    custom_prompt_label: "ÖZEL ODAK NOKTASI VE PROMPT İSTEĞİ (OPSİYONEL)",
+    custom_prompt_ph: 'Örn: "Özellikle abonelik fiyatı şikayetlerine ve son güncelleme kasmalarına odaklan..."',
+    limit_label: "LİMİT:",
+    limit_all: "TÜMÜ (SINIRSIZ)",
+    limit_50: "50 YORUM",
+    limit_100: "100 YORUM",
+    limit_200: "200 YORUM",
+    clear_cache: "ÖNBELLEĞİ TEMİZLE",
+    analyze_btn: "ANALİZ ET",
+    save_panel: "PANELİME KAYDET (+)",
+    download_md: "RAPORU İNDİR (.MD)",
+    avg_rating: "ORTALAMA PUAN",
+    sentiment_dist: "DUYGU DAĞILIMI",
+    app_identity: "UYGULAMA KİMLİĞİ",
+    avg_length: "ORTALAMA YORUM UZUNLUĞU",
+    chars_per_review: "Karakter / Yorum",
+    telemetry_card_title: "PAZAR TELEMETRİSİ İŞLENİYOR",
+    step_1: "[1] ÇOKLU ÜLKE SCRAPING",
+    step_2: "[2] AI DUYGU VE PAZAR ANALİZİ",
+    step_3: "[3] RAPOR YAPILANDIRMA",
+    telemetry_title: "COĞRAFİ ÜLKE DAĞILIMI VE EN ÇOK TEKRARLANAN KELİMELER",
+    summary_title: "[★] GENEL PAZAR ANALİZİ VE STRATEJİK İÇGÖRÜ",
+    custom_focus_title: "[!] ÖZEL ODAK NOKTASI İNCELEMESİ VE İÇGÖRÜSÜ",
+    liked_title: "[+] BEĞENİLEN ÖZELLİKLER",
+    improve_title: "[~] GELİŞTİRİLMESİ GEREKEN",
+    bad_title: "[-] KÖTÜ / EKSİK ÖZELLİKLER"
+  },
+  en: {
+    auth_btn: "LOGIN / REGISTER",
+    my_apps: "MY APPS",
+    logout: "LOGOUT",
+    tagline: "Enter Google Play Store or App Store URL — AI immediately reports market metrics,<br>geographic distribution, and user insights.",
+    play_label: "GOOGLE PLAY STORE LINK",
+    appstore_label: "APPLE APP STORE LINK",
+    custom_prompt_label: "CUSTOM FOCUS AREA & PROMPT REQUEST (OPTIONAL)",
+    custom_prompt_ph: 'e.g. "Focus specifically on subscription price complaints and recent update lag..."',
+    limit_label: "LIMIT:",
+    limit_all: "ALL (UNLIMITED)",
+    limit_50: "50 REVIEWS",
+    limit_100: "100 REVIEWS",
+    limit_200: "200 REVIEWS",
+    clear_cache: "CLEAR CACHE",
+    analyze_btn: "ANALYZE APP",
+    save_panel: "SAVE TO DASHBOARD (+)",
+    download_md: "DOWNLOAD REPORT (.MD)",
+    avg_rating: "AVERAGE RATING",
+    sentiment_dist: "SENTIMENT DISTRIBUTION",
+    app_identity: "APP IDENTITY",
+    avg_length: "AVG REVIEW LENGTH",
+    chars_per_review: "Characters / Review",
+    telemetry_card_title: "PROCESSING MARKET TELEMETRY",
+    step_1: "[1] MULTI-COUNTRY SCRAPING",
+    step_2: "[2] AI SENTIMENT & MARKET ANALYSIS",
+    step_3: "[3] REPORT CONFIGURATION",
+    telemetry_title: "GEOGRAPHIC COUNTRY DISTRIBUTION & TOP KEYWORDS",
+    summary_title: "[★] EXECUTIVE MARKET ANALYSIS & STRATEGIC INSIGHTS",
+    custom_focus_title: "[!] CUSTOM FOCUS ANALYSIS & INSIGHTS",
+    liked_title: "[+] LIKED FEATURES",
+    improve_title: "[~] NEEDS IMPROVEMENT",
+    bad_title: "[-] BAD / MISSING FEATURES"
+  }
+};
+
+let currentLang = localStorage.getItem("revixa_lang") || "tr";
+
+function applyLanguage(lang) {
+  currentLang = lang;
+  localStorage.setItem("revixa_lang", lang);
+
+  document.querySelectorAll(".lang-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-lang") === lang);
+  });
+
+  const t = translations[lang] || translations.tr;
+
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.getAttribute("data-i18n");
+    if (t[key]) {
+      el.innerHTML = t[key];
+    }
+  });
+
+  if (customPromptInput) {
+    customPromptInput.placeholder = t.custom_prompt_ph;
+  }
+}
+
+// Setup Language Switcher Listeners
+document.querySelectorAll(".lang-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    applyLanguage(btn.getAttribute("data-lang"));
+  });
+});
+
+// Initial Language Apply
+applyLanguage(currentLang);
 
 // State
 let selectedMaxReviews = 0;
@@ -113,9 +222,11 @@ if (clearCacheBtn) {
 }
 
 [playUrlInput, appstoreUrlInput, customPromptInput].forEach(inp => {
-  inp.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") startAnalysis();
-  });
+  if (inp) {
+    inp.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") startAnalysis();
+    });
+  }
 });
 
 // Auth Modal Listeners
@@ -255,7 +366,6 @@ async function openSavedAppsModal() {
       savedAppsList.appendChild(item);
     });
 
-    // Add listeners to dynamic elements
     savedAppsList.querySelectorAll(".app-load-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         playUrlInput.value = btn.getAttribute("data-play") || "";
@@ -331,10 +441,10 @@ async function handleClearCache() {
 async function startAnalysis() {
   const playUrl = playUrlInput.value.trim();
   const appstoreUrl = appstoreUrlInput.value.trim();
-  const customPrompt = customPromptInput.value.trim();
+  const customPrompt = customPromptInput ? customPromptInput.value.trim() : "";
 
   if (!playUrl && !appstoreUrl) {
-    showToast("LÜTFEN EN AZ BİR MAĞAZA URL'Sİ GİRİN");
+    showToast(currentLang === "en" ? "PLEASE ENTER AT LEAST ONE STORE URL" : "LÜTFEN EN AZ BİR MAĞAZA URL'Sİ GİRİN");
     return;
   }
 
@@ -347,7 +457,8 @@ async function startAnalysis() {
     url: playUrl || appstoreUrl,
     platform: (playUrl && appstoreUrl) ? "both" : "auto",
     max_reviews: selectedMaxReviews,
-    custom_prompt_extension: customPrompt || null
+    custom_prompt_extension: customPrompt || null,
+    language: currentLang
   };
 
   try {
@@ -389,7 +500,7 @@ function showLoading() {
 
   let pct = 0;
   progressPercent.textContent = "00%";
-  loadingMsg.textContent = "ÇOKLU ÜLKE PAZAR SCRAPING BAŞLATILIYOR...";
+  loadingMsg.textContent = currentLang === "en" ? "INITIATING MULTI-COUNTRY MARKET SCRAPING..." : "ÇOKLU ÜLKE PAZAR SCRAPING BAŞLATILIYOR...";
   updateAsciiBar(0);
 
   if (progressTimer) clearInterval(progressTimer);
@@ -397,14 +508,14 @@ function showLoading() {
   progressTimer = setInterval(() => {
     pct += 2;
     if (pct <= 40) {
-      loadingMsg.textContent = "ÇOKLU ÜLKE PAZAR SCRAPING BAŞLATILIYOR...";
+      loadingMsg.textContent = currentLang === "en" ? "INITIATING MULTI-COUNTRY MARKET SCRAPING..." : "ÇOKLU ÜLKE PAZAR SCRAPING BAŞLATILIYOR...";
       stepScraping.classList.add("active");
     } else if (pct <= 85) {
-      loadingMsg.textContent = "AI DUYGU, CHURN VE PAZAR ANALİZİ YAPILIYOR...";
+      loadingMsg.textContent = currentLang === "en" ? "PERFORMING AI SENTIMENT, CHURN & MARKET ANALYSIS..." : "AI DUYGU, CHURN VE PAZAR ANALİZİ YAPILIYOR...";
       stepScraping.classList.remove("active");
       stepAnalyzing.classList.add("active");
     } else if (pct < 98) {
-      loadingMsg.textContent = "PAZAR TELEMETRİ YAPILANDIRMASI TAMAMLANIYOR...";
+      loadingMsg.textContent = currentLang === "en" ? "FINALIZING MARKET TELEMETRY REPORT..." : "PAZAR TELEMETRİ YAPILANDIRMASI TAMAMLANIYOR...";
       stepAnalyzing.classList.remove("active");
       stepReport.classList.add("active");
     }
@@ -424,7 +535,7 @@ function finishLoading(callback) {
 
   progressPercent.textContent = "100%";
   updateAsciiBar(100);
-  loadingMsg.textContent = "ANALİZ BAŞARISIYLA TAMAMLANDI.";
+  loadingMsg.textContent = currentLang === "en" ? "ANALYSIS SUCCESSFULLY COMPLETED." : "ANALİZ BAŞARISIYLA TAMAMLANDI.";
   stepReport.classList.add("active");
 
   setTimeout(() => {
@@ -459,25 +570,26 @@ function showToast(msg) {
   }, 3000);
 }
 
-const customFocusCard = document.getElementById("custom-focus-card");
-const customFocusText = document.getElementById("custom-focus-text");
-
 function renderResults(data) {
   resultAppName.textContent = data.app_name.toUpperCase();
-  resultMeta.textContent = `${data.metadata.total_ratings.toLocaleString()} Mağaza Oylaması • ${data.total_reviews} İnceleme • Platform: ${data.platform.toUpperCase()}`;
+  resultMeta.textContent = currentLang === "en" 
+    ? `${data.metadata.total_ratings.toLocaleString()} Ratings • ${data.total_reviews} Analyzed Reviews • Platform: ${data.platform.toUpperCase()}`
+    : `${data.metadata.total_ratings.toLocaleString()} Mağaza Oylaması • ${data.total_reviews} İnceleme • Platform: ${data.platform.toUpperCase()}`;
 
   aiBadge.textContent = data.ai_provider.toUpperCase();
 
   metricRating.textContent = `${data.metadata.average_rating} / 5.0`;
-  metricRatingsCnt.textContent = `${data.metadata.total_ratings.toLocaleString()} toplam oylama`;
+  metricRatingsCnt.textContent = currentLang === "en" ? `${data.metadata.total_ratings.toLocaleString()} total ratings` : `${data.metadata.total_ratings.toLocaleString()} toplam oylama`;
 
   metricSentiment.textContent = `%${data.sentiment_dist.positive_pct}`;
-  metricSentiSub.textContent = `Pozitif: %${data.sentiment_dist.positive_pct} • Nötr: %${data.sentiment_dist.neutral_pct} • Negatif: %${data.sentiment_dist.negative_pct}`;
+  metricSentiSub.textContent = currentLang === "en"
+    ? `Pos: %${data.sentiment_dist.positive_pct} • Neu: %${data.sentiment_dist.neutral_pct} • Neg: %${data.sentiment_dist.negative_pct}`
+    : `Pozitif: %${data.sentiment_dist.positive_pct} • Nötr: %${data.sentiment_dist.neutral_pct} • Negatif: %${data.sentiment_dist.negative_pct}`;
 
   metricDeveloper.textContent = data.metadata.developer;
-  metricCategory.textContent = `${data.metadata.category} • Sürüm: ${data.metadata.version}`;
+  metricCategory.textContent = currentLang === "en" ? `${data.metadata.category} • Ver: ${data.metadata.version}` : `${data.metadata.category} • Sürüm: ${data.metadata.version}`;
 
-  metricLength.textContent = `${data.avg_review_length} karakter`;
+  metricLength.textContent = currentLang === "en" ? `${data.avg_review_length} chars` : `${data.avg_review_length} karakter`;
 
   // Render Custom Focus Card
   if (data.custom_focus_analysis && typeof data.custom_focus_analysis === "string" && data.custom_focus_analysis.trim() !== "") {
@@ -494,7 +606,7 @@ function renderResults(data) {
       const cnt = data.country_dist.counts[code] || 0;
       const pill = document.createElement("div");
       pill.className = "country-pill";
-      pill.textContent = `${code}: %${pct} (${cnt} yorum)`;
+      pill.textContent = currentLang === "en" ? `${code}: %${pct} (${cnt} reviews)` : `${code}: %${pct} (${cnt} yorum)`;
       countryDistBar.appendChild(pill);
     });
   }
@@ -510,7 +622,7 @@ function renderResults(data) {
     });
   }
 
-  summaryText.textContent = data.summary || "Özet bulunamadı.";
+  summaryText.textContent = data.summary || (currentLang === "en" ? "Summary unavailable." : "Özet bulunamadı.");
 
   renderCategoryList(likedList, data.liked);
   renderCategoryList(improveList, data.needs_improve);
@@ -529,7 +641,7 @@ function renderResults(data) {
 function renderCategoryList(containerEl, items) {
   containerEl.innerHTML = "";
   if (!items || items.length === 0) {
-    containerEl.innerHTML = '<div class="feature-item-desc">Öne çıkan kayıt bulunamadı.</div>';
+    containerEl.innerHTML = `<div class="feature-item-desc">${currentLang === "en" ? "No featured item found." : "Öne çıkan kayıt bulunamadı."}</div>`;
     return;
   }
 
@@ -545,8 +657,9 @@ function renderCategoryList(containerEl, items) {
       }).filter(Boolean).join("");
     }
 
+    const reviewLabel = currentLang === "en" ? "Reviews" : "Yorum";
     el.innerHTML = `
-      <div class="feature-item-title">${item.title} (${item.review_count} Yorum)</div>
+      <div class="feature-item-title">${item.title} (${item.review_count} ${reviewLabel})</div>
       <div class="feature-item-desc">${item.description}</div>
       ${quotesHtml}
     `;

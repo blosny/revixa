@@ -91,9 +91,10 @@ class AnalysisRequest(BaseModel):
     platform: Platform = Platform.AUTO
     max_reviews: int = Field(default=0, ge=0)
     
-    # Revixa v2: Özel Prompt ve LLM Provider Özelleştirme
+    # Revixa v2: Özel Prompt, LLM Provider ve Çoklu Dil Desteği
     custom_prompt_extension: Optional[str] = None
     preferred_llm_provider: Optional[AIProvider] = None
+    language: str = "tr"
 
 
 class AnalysisResult(BaseModel):

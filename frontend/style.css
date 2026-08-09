@@ -81,11 +81,51 @@ body {
   text-align: center;
 }
 
+/* Right Aligned Header Actions Container */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 /* Auth Bar */
 .auth-bar {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+/* Language Switcher Bar */
+.lang-switcher {
+  display: flex;
+  border: 1px solid var(--border-light);
+  background: #000000;
+}
+
+.lang-btn {
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border-light);
+  color: var(--text-dim);
+  padding: 6px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lang-btn:last-child {
+  border-right: none;
+}
+
+.lang-btn:hover {
+  color: #ffffff;
+}
+
+.lang-btn.active {
+  background: #ffffff;
+  color: #000000;
 }
 
 .auth-btn, .dashboard-btn, .logout-btn, .save-app-btn {

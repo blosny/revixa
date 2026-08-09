@@ -18,20 +18,27 @@
         <span class="logo-text">REVIXA</span>
       </div>
       
-      <!-- User Auth & Dashboard Bar -->
-      <div class="auth-bar" id="auth-bar">
-        <div id="logged-out-view">
-          <button id="open-auth-modal-btn" class="auth-btn">GİRİŞ YAP / KAYIT OL</button>
+      <!-- Right Aligned Header Actions -->
+      <div class="header-actions">
+        <div class="auth-bar" id="auth-bar">
+          <div id="logged-out-view">
+            <button id="open-auth-modal-btn" class="auth-btn" data-i18n="auth_btn">GİRİŞ YAP / KAYIT OL</button>
+          </div>
+          <div id="logged-in-view" class="hidden">
+            <span id="user-email-display" class="user-email">—</span>
+            <button id="open-apps-modal-btn" class="dashboard-btn" data-i18n="my_apps">UYGULAMALARIM</button>
+            <button id="logout-btn" class="logout-btn" data-i18n="logout">ÇIKIŞ YAP</button>
+          </div>
         </div>
-        <div id="logged-in-view" class="hidden">
-          <span id="user-email-display" class="user-email">—</span>
-          <button id="open-apps-modal-btn" class="dashboard-btn">UYGULAMALARIM</button>
-          <button id="logout-btn" class="logout-btn">ÇIKIŞ YAP</button>
+
+        <div class="lang-switcher" id="lang-group">
+          <button type="button" class="lang-btn active" data-lang="tr">TR</button>
+          <button type="button" class="lang-btn" data-lang="en">EN</button>
         </div>
       </div>
     </div>
 
-    <p class="header-tagline">
+    <p class="header-tagline" data-i18n="tagline">
       Google Play Store veya App Store URL'si girin — yapay zeka pazar metriklerini,<br>
       coğrafi dağılımı ve kullanıcı içgörüsünü anında raporlasın.
     </p>
@@ -47,7 +54,7 @@
           
           <div class="dual-input-grid">
             <div class="input-field-group">
-              <label class="input-label" for="play-url-input">
+              <label class="input-label" for="play-url-input" data-i18n="play_label">
                 GOOGLE PLAY STORE BAĞLANTISI
               </label>
               <input
@@ -63,7 +70,7 @@
             <div class="input-divider"></div>
 
             <div class="input-field-group">
-              <label class="input-label" for="appstore-url-input">
+              <label class="input-label" for="appstore-url-input" data-i18n="appstore_label">
                 APPLE APP STORE BAĞLANTISI
               </label>
               <input
@@ -79,7 +86,7 @@
 
           <!-- Custom Prompt Extension Input -->
           <div class="custom-prompt-group">
-            <label class="input-label" for="custom-prompt-input">
+            <label class="input-label" for="custom-prompt-input" data-i18n="custom_prompt_label">
               ÖZEL ODAK NOKTASI VE PROMPT İSTEĞİ (OPSİYONEL)
             </label>
             <input
@@ -95,21 +102,21 @@
           <div class="input-actions-row">
             <div class="custom-options">
               <div class="option-segment">
-                <span class="segment-label">LİMİT:</span>
+                <span class="segment-label" data-i18n="limit_label">LİMİT:</span>
                 <div class="btn-group" id="reviews-group">
-                  <button type="button" class="segment-btn active" data-value="0">TÜMÜ (SINIRSIZ)</button>
-                  <button type="button" class="segment-btn" data-value="50">50 YORUM</button>
-                  <button type="button" class="segment-btn" data-value="100">100 YORUM</button>
-                  <button type="button" class="segment-btn" data-value="200">200 YORUM</button>
+                  <button type="button" class="segment-btn active" data-value="0" data-i18n="limit_all">TÜMÜ (SINIRSIZ)</button>
+                  <button type="button" class="segment-btn" data-value="50" data-i18n="limit_50">50 YORUM</button>
+                  <button type="button" class="segment-btn" data-value="100" data-i18n="limit_100">100 YORUM</button>
+                  <button type="button" class="segment-btn" data-value="200" data-i18n="limit_200">200 YORUM</button>
                 </div>
               </div>
             </div>
 
             <div class="action-buttons-group">
-              <button id="clear-cache-btn" class="clear-cache-btn" title="Veritabanı önbelleğini temizler">
+              <button id="clear-cache-btn" class="clear-cache-btn" title="Veritabanı önbelleğini temizler" data-i18n="clear_cache">
                 ÖNBELLEĞİ TEMİZLE
               </button>
-              <button id="analyze-btn" class="analyze-btn">
+              <button id="analyze-btn" class="analyze-btn" data-i18n="analyze_btn">
                 ANALİZ ET
               </button>
             </div>
@@ -122,7 +129,7 @@
       <section id="loading-section" class="loading-section">
         <div class="telemetry-card">
           <div class="telemetry-header">
-            <span class="telemetry-title">PAZAR TELEMETRİSİ İŞLENİYOR</span>
+            <span class="telemetry-title" data-i18n="telemetry_card_title">PAZAR TELEMETRİSİ İŞLENİYOR</span>
             <span id="progress-percent" class="telemetry-percent">00%</span>
           </div>
 
@@ -136,9 +143,9 @@
           </div>
 
           <div class="loading-steps">
-            <div id="step-scraping" class="loading-step">[1] ÇOKLU ÜLKE SCRAPING</div>
-            <div id="step-analyzing" class="loading-step">[2] AI DUYGU VE PAZAR ANALİZİ</div>
-            <div id="step-report" class="loading-step">[3] RAPOR YAPILANDIRMA</div>
+            <div id="step-scraping" class="loading-step" data-i18n="step_1">[1] ÇOKLU ÜLKE SCRAPING</div>
+            <div id="step-analyzing" class="loading-step" data-i18n="step_2">[2] AI DUYGU VE PAZAR ANALİZİ</div>
+            <div id="step-report" class="loading-step" data-i18n="step_3">[3] RAPOR YAPILANDIRMA</div>
           </div>
         </div>
       </section>
@@ -164,11 +171,11 @@
             <div id="result-meta" class="app-meta">—</div>
           </div>
           <div class="app-info-right">
-            <button id="save-app-btn" class="save-app-btn hidden" title="Bu uygulamayı hesabınıza kaydeder">
+            <button id="save-app-btn" class="save-app-btn hidden" title="Bu uygulamayı hesabınıza kaydeder" data-i18n="save_panel">
               PANELİME KAYDET (+)
             </button>
             <span id="ai-badge" class="ai-badge">GEMINI</span>
-            <button id="download-md-btn" class="download-btn highlight">
+            <button id="download-md-btn" class="download-btn highlight" data-i18n="download_md">
               RAPORU İNDİR (.MD)
             </button>
           </div>
@@ -181,47 +188,47 @@
           <div class="metrics-grid">
             
             <div class="metric-card">
-              <div class="metric-title">ORTALAMA PUAN</div>
+              <div class="metric-title" data-i18n="avg_rating">ORTALAMA PUAN</div>
               <div id="metric-rating" class="metric-value">—</div>
               <div id="metric-ratings-count" class="metric-sub">—</div>
             </div>
 
             <div class="metric-card">
-              <div class="metric-title">DUYGU DAĞILIMI</div>
+              <div class="metric-title" data-i18n="sentiment_dist">DUYGU DAĞILIMI</div>
               <div id="metric-sentiment" class="metric-value">—</div>
               <div id="metric-sentiment-sub" class="metric-sub">—</div>
             </div>
 
             <div class="metric-card">
-              <div class="metric-title">UYGULAMA KİMLİĞİ</div>
+              <div class="metric-title" data-i18n="app_identity">UYGULAMA KİMLİĞİ</div>
               <div id="metric-developer" class="metric-value-sm">—</div>
               <div id="metric-category" class="metric-sub">—</div>
             </div>
 
             <div class="metric-card">
-              <div class="metric-title">ORTALAMA YORUM UZUNLUĞU</div>
+              <div class="metric-title" data-i18n="avg_length">ORTALAMA YORUM UZUNLUĞU</div>
               <div id="metric-length" class="metric-value">—</div>
-              <div class="metric-sub">Karakter / Yorum</div>
+              <div class="metric-sub" data-i18n="chars_per_review">Karakter / Yorum</div>
             </div>
 
           </div>
 
           <!-- Country Breakdown & Top Keywords Bar -->
           <div class="telemetry-bar-card">
-            <div class="summary-title">COĞRAFİ ÜLKE DAĞILIMI VE EN ÇOK TEKRARLANAN KELİMELER</div>
+            <div class="summary-title" data-i18n="telemetry_title">COĞRAFİ ÜLKE DAĞILIMI VE EN ÇOK TEKRARLANAN KELİMELER</div>
             <div id="country-distribution-bar" class="country-distribution-bar"></div>
             <div id="keywords-list-bar" class="keywords-list-bar"></div>
           </div>
 
           <!-- Executive Summary -->
           <div id="summary-card" class="summary-card main-summary-card">
-            <div class="summary-title">[★] GENEL PAZAR ANALİZİ VE STRATEJİK İÇGÖRÜ</div>
+            <div class="summary-title" data-i18n="summary_title">[★] GENEL PAZAR ANALİZİ VE STRATEJİK İÇGÖRÜ</div>
             <p id="summary-text" class="summary-text">—</p>
           </div>
 
           <!-- Custom Focus & Prompt Extension Findings Card -->
           <div id="custom-focus-card" class="summary-card highlight-card hidden">
-            <div class="summary-title">[!] ÖZEL ODAK NOKTASI İNCELEMESİ VE İÇGÖRÜSÜ</div>
+            <div class="summary-title" data-i18n="custom_focus_title">[!] ÖZEL ODAK NOKTASI İNCELEMESİ VE İÇGÖRÜSÜ</div>
             <p id="custom-focus-text" class="summary-text">—</p>
           </div>
 
@@ -231,7 +238,7 @@
             <!-- Liked -->
             <div class="category-card liked">
               <div class="category-header">
-                <span class="category-title">[+] BEĞENİLEN ÖZELLİKLER</span>
+                <span class="category-title" data-i18n="liked_title">[+] BEĞENİLEN ÖZELLİKLER</span>
                 <span id="liked-count" class="category-count">0</span>
               </div>
               <div id="liked-list" class="feature-list"></div>
@@ -240,7 +247,7 @@
             <!-- Needs Improvement -->
             <div class="category-card improve">
               <div class="category-header">
-                <span class="category-title">[~] GELİŞTİRİLMESİ GEREKEN</span>
+                <span class="category-title" data-i18n="improve_title">[~] GELİŞTİRİLMESİ GEREKEN</span>
                 <span id="improve-count" class="category-count">0</span>
               </div>
               <div id="improve-list" class="feature-list"></div>
@@ -249,7 +256,7 @@
             <!-- Bad -->
             <div class="category-card bad">
               <div class="category-header">
-                <span class="category-title">[-] KÖTÜ / EKSİK ÖZELLİKLER</span>
+                <span class="category-title" data-i18n="bad_title">[-] KÖTÜ / EKSİK ÖZELLİKLER</span>
                 <span id="bad-count" class="category-count">0</span>
               </div>
               <div id="bad-list" class="feature-list"></div>

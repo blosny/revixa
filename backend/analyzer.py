@@ -198,9 +198,15 @@ class GeminiAnalyzer:
                 metadata: AppMetadata, rating_dist: RatingDistribution,
                 country_dist: CountryDistribution, avg_len: int,
                 keywords: list[KeywordCount],
-                custom_prompt_extension: str | None = None) -> AnalysisResult:
+                custom_prompt_extension: str | None = None,
+                language: str = "tr") -> AnalysisResult:
         reviews_text = _build_reviews_text(reviews, max_chars=12000)
         prompt = ANALYSIS_PROMPT
+        if language == "en":
+            prompt += "\n\nCRITICAL LANGUAGE INSTRUCTION: Respond completely in ENGLISH language. All summary sentences, custom focus analysis, feature titles, descriptions, and feature rankings MUST be written in fluent English."
+        else:
+            prompt += "\n\nCRITICAL LANGUAGE INSTRUCTION: Yanıtını tamamen AKICI TÜRKÇE dilinde yaz."
+            
         if custom_prompt_extension and custom_prompt_extension.strip():
             prompt += f"\n\nKULLANICI ÖZEL ANALİZ İSTEĞİ VE ODAK NOKTASI:\n{custom_prompt_extension.strip()}\nLütfen analizi yaparken yukarıdaki özel istek ve odak noktasına özel bir yer ayır.\n\n"
         prompt += reviews_text
@@ -210,7 +216,7 @@ class GeminiAnalyzer:
         last_err = None
 
         for model in models_to_try:
-            logger.info(f"Gemini analizi başlatılıyor ({len(reviews)} yorum, model: {model})...")
+            logger.info(f"Gemini analizi başlatılıyor ({len(reviews)} yorum, model: {model}, dil: {language})...")
             for attempt in range(1, 4):
                 try:
                     response = self.client.models.generate_content(
@@ -269,14 +275,20 @@ class OllamaAnalyzer:
                 metadata: AppMetadata, rating_dist: RatingDistribution,
                 country_dist: CountryDistribution, avg_len: int,
                 keywords: list[KeywordCount],
-                custom_prompt_extension: str | None = None) -> AnalysisResult:
+                custom_prompt_extension: str | None = None,
+                language: str = "tr") -> AnalysisResult:
         reviews_text = _build_reviews_text(reviews, max_chars=8000)
         prompt = ANALYSIS_PROMPT
+        if language == "en":
+            prompt += "\n\nCRITICAL LANGUAGE INSTRUCTION: Respond completely in ENGLISH language. All summary sentences, custom focus analysis, feature titles, descriptions, and feature rankings MUST be written in fluent English."
+        else:
+            prompt += "\n\nCRITICAL LANGUAGE INSTRUCTION: Yanıtını tamamen AKICI TÜRKÇE dilinde yaz."
+
         if custom_prompt_extension and custom_prompt_extension.strip():
             prompt += f"\n\nKULLANICI ÖZEL ANALİZ İSTEĞİ VE ODAK NOKTASI:\n{custom_prompt_extension.strip()}\nLütfen analizi yaparken yukarıdaki özel istek ve odak noktasına özel bir yer ayır.\n\n"
         prompt += reviews_text
 
-        logger.info(f"Ollama analizi başlatılıyor ({len(reviews)} yorum)...")
+        logger.info(f"Ollama analizi başlatılıyor ({len(reviews)} yorum, dil: {language})...")
 
         with httpx.Client(timeout=600.0) as client:
             response = client.post(
@@ -321,12 +333,13 @@ class AIRouter:
                 metadata: AppMetadata, rating_dist: RatingDistribution,
                 country_dist: CountryDistribution, avg_len: int,
                 keywords: list[KeywordCount],
-                custom_prompt_extension: str | None = None) -> AnalysisResult:
+                custom_prompt_extension: str | None = None,
+                language: str = "tr") -> AnalysisResult:
         if self._gemini:
             try:
                 return self._gemini.analyze(
                     reviews, app_name, platform, metadata, rating_dist,
-                    country_dist, avg_len, keywords, custom_prompt_extension
+                    country_dist, avg_len, keywords, custom_prompt_extension, language
                 )
             except Exception as e:
                 logger.warning(f"Gemini hatası: {e} -> Ollama servisine geçiliyor...")
