@@ -1,38 +1,63 @@
 /**
- * Revixa — Minimalist Market Intelligence & PDF/MD Report Generator
+ * Revixa v2 — Minimalist Market Intelligence & PDF/MD Report Generator
+ * Auth, Custom Prompt Extension, and Saved Apps Dashboard Integration.
  */
 
 const API_BASE = "http://localhost:8000";
 
 // DOM References
-const playUrlInput     = document.getElementById("play-url-input");
-const appstoreUrlInput = document.getElementById("appstore-url-input");
-const analyzeBtn       = document.getElementById("analyze-btn");
-const clearCacheBtn    = document.getElementById("clear-cache-btn");
+const playUrlInput      = document.getElementById("play-url-input");
+const appstoreUrlInput  = document.getElementById("appstore-url-input");
+const customPromptInput = document.getElementById("custom-prompt-input");
 
-const reviewsGroup     = document.getElementById("reviews-group");
+const analyzeBtn        = document.getElementById("analyze-btn");
+const clearCacheBtn     = document.getElementById("clear-cache-btn");
+const reviewsGroup      = document.getElementById("reviews-group");
 
-const loadingSection   = document.getElementById("loading-section");
-const errorSection     = document.getElementById("error-section");
-const resultsSection   = document.getElementById("results-section");
+const loadingSection    = document.getElementById("loading-section");
+const errorSection      = document.getElementById("error-section");
+const resultsSection    = document.getElementById("results-section");
 
-const asciiBar        = document.getElementById("ascii-bar");
-const progressPercent = document.getElementById("progress-percent");
-const loadingMsg     = document.getElementById("loading-msg");
+const asciiBar         = document.getElementById("ascii-bar");
+const progressPercent  = document.getElementById("progress-percent");
+const loadingMsg      = document.getElementById("loading-msg");
 
-const stepScraping  = document.getElementById("step-scraping");
-const stepAnalyzing = document.getElementById("step-analyzing");
-const stepReport    = document.getElementById("step-report");
+const stepScraping   = document.getElementById("step-scraping");
+const stepAnalyzing  = document.getElementById("step-analyzing");
+const stepReport     = document.getElementById("step-report");
 
-const errorTitle  = document.getElementById("error-title");
-const errorDetail = document.getElementById("error-detail");
-const toastMsg    = document.getElementById("toast-message");
+const errorTitle   = document.getElementById("error-title");
+const errorDetail  = document.getElementById("error-detail");
+const toastMsg     = document.getElementById("toast-message");
 
-const resultAppName  = document.getElementById("result-app-name");
-const resultMeta     = document.getElementById("result-meta");
-const aiBadge        = document.getElementById("ai-badge");
-const downloadMdBtn  = document.getElementById("download-md-btn");
-const downloadPdfBtn = document.getElementById("download-pdf-btn");
+const resultAppName   = document.getElementById("result-app-name");
+const resultMeta      = document.getElementById("result-meta");
+const aiBadge         = document.getElementById("ai-badge");
+const downloadMdBtn   = document.getElementById("download-md-btn");
+const saveAppBtn      = document.getElementById("save-app-btn");
+
+// Auth DOM
+const openAuthModalBtn = document.getElementById("open-auth-modal-btn");
+const closeAuthModalBtn = document.getElementById("close-auth-modal-btn");
+const authModal        = document.getElementById("auth-modal");
+const authForm         = document.getElementById("auth-form");
+const authEmail        = document.getElementById("auth-email");
+const authPassword     = document.getElementById("auth-password");
+const authSubmitBtn    = document.getElementById("auth-submit-btn");
+
+const tabLoginBtn      = document.getElementById("tab-login-btn");
+const tabRegisterBtn   = document.getElementById("tab-register-btn");
+
+const loggedOutView    = document.getElementById("logged-out-view");
+const loggedInView     = document.getElementById("logged-in-view");
+const userEmailDisplay = document.getElementById("user-email-display");
+const logoutBtn        = document.getElementById("logout-btn");
+
+// Saved Apps DOM
+const openAppsModalBtn  = document.getElementById("open-apps-modal-btn");
+const closeAppsModalBtn = document.getElementById("close-apps-modal-btn");
+const appsModal         = document.getElementById("apps-modal");
+const savedAppsList     = document.getElementById("saved-apps-list");
 
 // Metrics DOM
 const metricRating      = document.getElementById("metric-rating");
@@ -59,6 +84,11 @@ const badCount     = document.getElementById("bad-count");
 let selectedMaxReviews = 0;
 let currentReport = null;
 let progressTimer = null;
+let isRegisterTab = false;
+let currentUser = null;
+
+// Init Auth Check
+checkAuth();
 
 // Segmented Buttons
 setupSegmentGroup(reviewsGroup, (val) => { selectedMaxReviews = parseInt(val); });
@@ -82,11 +112,211 @@ if (clearCacheBtn) {
   clearCacheBtn.addEventListener("click", handleClearCache);
 }
 
-[playUrlInput, appstoreUrlInput].forEach(inp => {
+[playUrlInput, appstoreUrlInput, customPromptInput].forEach(inp => {
   inp.addEventListener("keydown", (e) => {
     if (e.key === "Enter") startAnalysis();
   });
 });
+
+// Auth Modal Listeners
+if (openAuthModalBtn) openAuthModalBtn.addEventListener("click", () => authModal.classList.remove("hidden"));
+if (closeAuthModalBtn) closeAuthModalBtn.addEventListener("click", () => authModal.classList.add("hidden"));
+if (logoutBtn) logoutBtn.addEventListener("click", handleLogout);
+
+tabLoginBtn.addEventListener("click", () => setAuthTab(false));
+tabRegisterBtn.addEventListener("click", () => setAuthTab(true));
+
+authForm.addEventListener("submit", handleAuthSubmit);
+
+// Saved Apps Modal Listeners
+if (openAppsModalBtn) openAppsModalBtn.addEventListener("click", openSavedAppsModal);
+if (closeAppsModalBtn) closeAppsModalBtn.addEventListener("click", () => appsModal.classList.add("hidden"));
+if (saveAppBtn) saveAppBtn.addEventListener("click", handleSaveCurrentApp);
+
+function setAuthTab(isRegister) {
+  isRegisterTab = isRegister;
+  if (isRegister) {
+    tabRegisterBtn.classList.add("active");
+    tabLoginBtn.classList.remove("active");
+    authSubmitBtn.textContent = "KAYIT OL";
+  } else {
+    tabLoginBtn.classList.add("active");
+    tabRegisterBtn.classList.remove("active");
+    authSubmitBtn.textContent = "GİRİŞ YAP";
+  }
+}
+
+async function checkAuth() {
+  const token = localStorage.getItem("revixa_token");
+  if (!token) {
+    setLoggedOutUI();
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/auth/me`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (res.ok) {
+      currentUser = await res.json();
+      setLoggedInUI(currentUser.email);
+    } else {
+      handleLogout();
+    }
+  } catch (err) {
+    setLoggedOutUI();
+  }
+}
+
+function setLoggedInUI(email) {
+  loggedOutView.classList.add("hidden");
+  loggedInView.classList.remove("hidden");
+  userEmailDisplay.textContent = email;
+  if (saveAppBtn) saveAppBtn.classList.remove("hidden");
+}
+
+function setLoggedOutUI() {
+  currentUser = null;
+  loggedOutView.classList.remove("hidden");
+  loggedInView.classList.add("hidden");
+  if (saveAppBtn) saveAppBtn.classList.add("hidden");
+}
+
+function handleLogout() {
+  localStorage.removeItem("revixa_token");
+  setLoggedOutUI();
+  showToast("ÇIKIŞ YAPILDI");
+}
+
+async function handleAuthSubmit(e) {
+  e.preventDefault();
+  const email = authEmail.value.trim();
+  const password = authPassword.value.trim();
+
+  if (!email || !password) return;
+
+  const endpoint = isRegisterTab ? "/auth/register" : "/auth/login";
+
+  try {
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      showToast(`HATA: ${data.detail || "İşlem başarısız"}`);
+      return;
+    }
+
+    if (isRegisterTab) {
+      showToast("KAYIT BAŞARILI! ŞİMDİ GİRİŞ YAPABİLİRSİNİZ.");
+      setAuthTab(false);
+    } else {
+      localStorage.setItem("revixa_token", data.access_token);
+      authModal.classList.add("hidden");
+      showToast("GİRİŞ BAŞARILI!");
+      checkAuth();
+    }
+  } catch (err) {
+    showToast("SUNUCU İLE İLETİŞİM KURULAMADI");
+  }
+}
+
+async function openSavedAppsModal() {
+  appsModal.classList.remove("hidden");
+  savedAppsList.innerHTML = '<p class="modal-subtitle">Uygulamalar yükleniyor...</p>';
+
+  const token = localStorage.getItem("revixa_token");
+  try {
+    const res = await fetch(`${API_BASE}/user/apps`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const apps = await res.json();
+
+    if (apps.length === 0) {
+      savedAppsList.innerHTML = '<p class="modal-subtitle">Henüz kaydedilmiş uygulamanız yok.</p>';
+      return;
+    }
+
+    savedAppsList.innerHTML = "";
+    apps.forEach(app => {
+      const item = document.createElement("div");
+      item.className = "saved-app-item";
+      item.innerHTML = `
+        <span class="saved-app-title">${app.title}</span>
+        <div class="saved-app-actions">
+          <button class="app-load-btn" data-play="${app.play_url || ''}" data-appstore="${app.appstore_url || ''}">ANALİZ ET</button>
+          <button class="app-delete-btn" data-id="${app.id}">SİL</button>
+        </div>
+      `;
+      savedAppsList.appendChild(item);
+    });
+
+    // Add listeners to dynamic elements
+    savedAppsList.querySelectorAll(".app-load-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        playUrlInput.value = btn.getAttribute("data-play") || "";
+        appstoreUrlInput.value = btn.getAttribute("data-appstore") || "";
+        appsModal.classList.add("hidden");
+        startAnalysis();
+      });
+    });
+
+    savedAppsList.querySelectorAll(".app-delete-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const appId = btn.getAttribute("data-id");
+        await fetch(`${API_BASE}/user/apps/${appId}`, {
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        showToast("UYGULAMA SİLİNDİ");
+        openSavedAppsModal();
+      });
+    });
+
+  } catch (err) {
+    savedAppsList.innerHTML = '<p class="modal-subtitle">Uygulamalar yüklenirken hata oluştu.</p>';
+  }
+}
+
+async function handleSaveCurrentApp() {
+  if (!currentReport) return;
+
+  const token = localStorage.getItem("revixa_token");
+  if (!token) {
+    showToast("LÜTFEN ÖNCE GİRİŞ YAPIN");
+    return;
+  }
+
+  const payload = {
+    title: currentReport.app_name,
+    play_url: playUrlInput.value.trim() || null,
+    appstore_url: appstoreUrlInput.value.trim() || null
+  };
+
+  try {
+    const res = await fetch(`${API_BASE}/user/apps`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      showToast("UYGULAMA PANELİNİZE KAYDEDİLDİ!");
+    } else {
+      const err = await res.json();
+      showToast(`HATA: ${err.detail}`);
+    }
+  } catch (err) {
+    showToast("SUNUCU BAĞLANTISI BAŞARISIZ");
+  }
+}
 
 async function handleClearCache() {
   try {
@@ -98,297 +328,255 @@ async function handleClearCache() {
   }
 }
 
-function showToast(msg) {
-  if (!toastMsg) return;
-  toastMsg.textContent = msg;
-  toastMsg.classList.add("visible");
-  setTimeout(() => { toastMsg.classList.remove("visible"); }, 3000);
-}
-
 async function startAnalysis() {
   const playUrl = playUrlInput.value.trim();
   const appstoreUrl = appstoreUrlInput.value.trim();
+  const customPrompt = customPromptInput.value.trim();
 
   if (!playUrl && !appstoreUrl) {
-    playUrlInput.focus();
-    playUrlInput.style.borderColor = "#ffffff";
-    setTimeout(() => { playUrlInput.style.borderColor = ""; }, 1500);
+    showToast("LÜTFEN EN AZ BİR MAĞAZA URL'Sİ GİRİN");
     return;
   }
 
+  resetUI();
   showLoading();
 
-  try {
-    const result = await analyzeApp(playUrl, appstoreUrl);
-    showResults(result);
-  } catch (err) {
-    showError("ANALİZ BAŞARISIZ", err.message || "Bilinmeyen bir hata oluştu.");
-  }
-}
-
-// ASCII Bar Telemetry Renderer
-function renderAsciiBar(percent) {
-  const totalBlocks = 30;
-  const filledBlocks = Math.round((percent / 100) * totalBlocks);
-  const emptyBlocks = totalBlocks - filledBlocks;
-  return `[ ${"█".repeat(filledBlocks)}${"░".repeat(emptyBlocks)} ]`;
-}
-
-function updateProgress(percent, message, step) {
-  percent = Math.min(100, Math.max(0, percent));
-  
-  if (asciiBar) asciiBar.textContent = renderAsciiBar(percent);
-  if (progressPercent) progressPercent.textContent = `${percent.toString().padStart(2, '0')}%`;
-  if (message) loadingMsg.textContent = message;
-
-  if (step) {
-    const steps = { scraping: stepScraping, analyzing: stepAnalyzing, report: stepReport };
-    const order = ["scraping", "analyzing", "report"];
-    const idx   = order.indexOf(step);
-
-    order.forEach((s, i) => {
-      const el = steps[s];
-      if (!el) return;
-      el.classList.remove("active", "done");
-      if (i < idx)   el.classList.add("done");
-      if (i === idx) el.classList.add("active");
-    });
-  }
-}
-
-function simulateProgress() {
-  let current = 5;
-  updateProgress(5, "ÇOKLU ÜLKE YORUMLARI TOPLANIYOR...", "scraping");
-
-  progressTimer = setInterval(() => {
-    if (current < 45) {
-      current += Math.floor(Math.random() * 4) + 2;
-      updateProgress(current, "MAĞAZALARDAN METİNLİ VERİLER ÇEKİLİYOR...", "scraping");
-    } else if (current < 88) {
-      current += Math.floor(Math.random() * 2) + 1;
-      updateProgress(current, "AI DUYGU VE PAZAR ANALİZİ YAPILIYOR...", "analyzing");
-    } else if (current < 98) {
-      current += 1;
-      updateProgress(current, "RAPOR METRİKLERİ YAPILANDIRILIYOR...", "report");
-    }
-  }, 700);
-}
-
-function stopProgress() {
-  if (progressTimer) {
-    clearInterval(progressTimer);
-    progressTimer = null;
-  }
-}
-
-// API Request
-async function analyzeApp(playUrl, appstoreUrl) {
-  const body = {
+  const payload = {
     play_url: playUrl || null,
     appstore_url: appstoreUrl || null,
-    url: playUrl || appstoreUrl || null,
+    url: playUrl || appstoreUrl,
+    platform: (playUrl && appstoreUrl) ? "both" : "auto",
     max_reviews: selectedMaxReviews,
+    custom_prompt_extension: customPrompt || null
   };
-
-  simulateProgress();
 
   try {
     const response = await fetch(`${API_BASE}/analyze`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify(payload)
     });
 
-    stopProgress();
+    const data = await response.json();
 
     if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      throw new Error(errData.detail || errData.error || `Sunucu hatası: ${response.status}`);
+      hideLoading();
+      showError("ANALİZ BAŞARISIZ", data.detail || "Yorumlar işlenirken beklenmeyen bir hata oluştu.");
+      return;
     }
 
-    updateProgress(100, "ANALİZ TAMAMLANDI.", "report");
-    await delay(300);
+    currentReport = data;
+    finishLoading(() => {
+      renderResults(data);
+    });
 
-    return response.json();
   } catch (err) {
-    stopProgress();
-    throw err;
+    hideLoading();
+    showError("SUNUCU BAĞLANTI HATASI", "Backend sunucusuna ulaşılamıyor (http://localhost:8000). Sunucunun çalıştığından emin olun.");
   }
 }
 
-// UI Rendering
+function resetUI() {
+  errorSection.style.display = "none";
+  resultsSection.style.display = "none";
+}
+
 function showLoading() {
-  hideAll();
-  loadingSection.classList.add("visible");
-  analyzeBtn.disabled = true;
-  analyzeBtn.textContent = "İŞLENİYOR...";
-  updateProgress(0, "BAĞLANTI KURULUYOR...", "scraping");
+  loadingSection.style.display = "block";
+  stepScraping.classList.add("active");
+  stepAnalyzing.classList.remove("active");
+  stepReport.classList.remove("active");
+
+  let pct = 0;
+  progressPercent.textContent = "00%";
+  loadingMsg.textContent = "ÇOKLU ÜLKE PAZAR SCRAPING BAŞLATILIYOR...";
+  updateAsciiBar(0);
+
+  if (progressTimer) clearInterval(progressTimer);
+
+  progressTimer = setInterval(() => {
+    pct += 2;
+    if (pct <= 40) {
+      loadingMsg.textContent = "ÇOKLU ÜLKE PAZAR SCRAPING BAŞLATILIYOR...";
+      stepScraping.classList.add("active");
+    } else if (pct <= 85) {
+      loadingMsg.textContent = "AI DUYGU, CHURN VE PAZAR ANALİZİ YAPILIYOR...";
+      stepScraping.classList.remove("active");
+      stepAnalyzing.classList.add("active");
+    } else if (pct < 98) {
+      loadingMsg.textContent = "PAZAR TELEMETRİ YAPILANDIRMASI TAMAMLANIYOR...";
+      stepAnalyzing.classList.remove("active");
+      stepReport.classList.add("active");
+    }
+
+    if (pct >= 98) {
+      pct = 98;
+      clearInterval(progressTimer);
+    }
+
+    progressPercent.textContent = `${pct.toString().padStart(2, '0')}%`;
+    updateAsciiBar(pct);
+  }, 200);
+}
+
+function finishLoading(callback) {
+  if (progressTimer) clearInterval(progressTimer);
+
+  progressPercent.textContent = "100%";
+  updateAsciiBar(100);
+  loadingMsg.textContent = "ANALİZ BAŞARISIYLA TAMAMLANDI.";
+  stepReport.classList.add("active");
+
+  setTimeout(() => {
+    loadingSection.style.display = "none";
+    if (callback) callback();
+  }, 400);
+}
+
+function hideLoading() {
+  if (progressTimer) clearInterval(progressTimer);
+  loadingSection.style.display = "none";
+}
+
+function updateAsciiBar(percent) {
+  const totalBlocks = 40;
+  const filledBlocks = Math.round((percent / 100) * totalBlocks);
+  const emptyBlocks = totalBlocks - filledBlocks;
+  asciiBar.textContent = `[ ${"█".repeat(filledBlocks)}${"░".repeat(emptyBlocks)} ]`;
 }
 
 function showError(title, detail) {
-  hideAll();
-  errorSection.classList.add("visible");
   errorTitle.textContent = title;
   errorDetail.textContent = detail;
-  resetBtn();
+  errorSection.style.display = "block";
 }
 
-function showResults(data) {
-  hideAll();
-  currentReport = data;
-  resultsSection.classList.add("visible");
-  resetBtn();
+function showToast(msg) {
+  toastMsg.textContent = msg;
+  toastMsg.classList.add("show");
+  setTimeout(() => {
+    toastMsg.classList.remove("show");
+  }, 3000);
+}
 
-  if (data.cached_response) {
-    showToast("SONUÇ VERİTABANI ÖNBELLEĞİNDEN YÜKLENDİ (0.05 SN)");
+const customFocusCard = document.getElementById("custom-focus-card");
+const customFocusText = document.getElementById("custom-focus-text");
+
+function renderResults(data) {
+  resultAppName.textContent = data.app_name.toUpperCase();
+  resultMeta.textContent = `${data.metadata.total_ratings.toLocaleString()} Mağaza Oylaması • ${data.total_reviews} İnceleme • Platform: ${data.platform.toUpperCase()}`;
+
+  aiBadge.textContent = data.ai_provider.toUpperCase();
+
+  metricRating.textContent = `${data.metadata.average_rating} / 5.0`;
+  metricRatingsCnt.textContent = `${data.metadata.total_ratings.toLocaleString()} toplam oylama`;
+
+  metricSentiment.textContent = `%${data.sentiment_dist.positive_pct}`;
+  metricSentiSub.textContent = `Pozitif: %${data.sentiment_dist.positive_pct} • Nötr: %${data.sentiment_dist.neutral_pct} • Negatif: %${data.sentiment_dist.negative_pct}`;
+
+  metricDeveloper.textContent = data.metadata.developer;
+  metricCategory.textContent = `${data.metadata.category} • Sürüm: ${data.metadata.version}`;
+
+  metricLength.textContent = `${data.avg_review_length} karakter`;
+
+  // Render Custom Focus Card
+  if (data.custom_focus_analysis && typeof data.custom_focus_analysis === "string" && data.custom_focus_analysis.trim() !== "") {
+    customFocusText.textContent = data.custom_focus_analysis;
+    customFocusCard.classList.remove("hidden");
+  } else {
+    customFocusCard.classList.add("hidden");
   }
 
-  const meta = data.metadata || {};
-  const totalRatingsFormatted = (meta.total_ratings || 0).toLocaleString();
-  
-  resultAppName.textContent = data.app_name || meta.title || "Bilinmeyen Uygulama";
-  resultMeta.textContent = `${totalRatingsFormatted} Toplam Mağaza Oylaması // ${data.total_reviews} Metinli Yorum İnceledi // Platform: ${(data.platform || "").toUpperCase()}`;
+  // Render Countries
+  countryDistBar.innerHTML = "";
+  if (data.country_dist && data.country_dist.percentages) {
+    Object.entries(data.country_dist.percentages).forEach(([code, pct]) => {
+      const cnt = data.country_dist.counts[code] || 0;
+      const pill = document.createElement("div");
+      pill.className = "country-pill";
+      pill.textContent = `${code}: %${pct} (${cnt} yorum)`;
+      countryDistBar.appendChild(pill);
+    });
+  }
 
-  aiBadge.textContent = (data.ai_provider || "AI").toUpperCase();
+  // Render Keywords
+  keywordsListBar.innerHTML = "";
+  if (data.top_keywords) {
+    data.top_keywords.forEach(kw => {
+      const tag = document.createElement("div");
+      tag.className = "keyword-tag";
+      tag.textContent = `${kw.keyword} (${kw.count})`;
+      keywordsListBar.appendChild(tag);
+    });
+  }
 
-  // Metrics Grid
-  metricRating.textContent = `PUAN: ${meta.average_rating || 0.0} / 5.0`;
-  metricRatingsCnt.textContent = `${totalRatingsFormatted} toplam oylama`;
-
-  const sent = data.sentiment_dist || {};
-  metricSentiment.textContent = `%${sent.positive_pct || 0}`;
-  metricSentiSub.textContent = `Pozitif // Nötr: %${sent.neutral_pct || 0} // Negatif: %${sent.negative_pct || 0}`;
-
-  metricDeveloper.textContent = meta.developer || "Bilinmiyor";
-  metricCategory.textContent = `${meta.category || "Genel"} // Sürüm: ${meta.version || "v1.0"}`;
-
-  metricLength.textContent = `${data.avg_review_length || 0} karakter`;
-
-  // Country Distribution Bar
-  renderCountryBar(data.country_dist || {}, data.total_reviews || 0);
-
-  // Top Keywords
-  renderKeywordsBar(data.top_keywords || []);
-
-  // Summary
   summaryText.textContent = data.summary || "Özet bulunamadı.";
 
-  // Categories
-  renderFeatures(likedList,   likedCount,   data.liked         || []);
-  renderFeatures(improveList, improveCount, data.needs_improve  || []);
-  renderFeatures(badList,     badCount,     data.bad            || []);
+  renderCategoryList(likedList, data.liked);
+  renderCategoryList(improveList, data.needs_improve);
+  renderCategoryList(badList, data.bad);
 
-  resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  likedCount.textContent   = data.liked ? data.liked.length : 0;
+  improveCount.textContent = data.needs_improve ? data.needs_improve.length : 0;
+  badCount.textContent     = data.bad ? data.bad.length : 0;
+
+  downloadMdBtn.onclick = () => downloadMarkdownReport(data);
+
+  resultsSection.style.display = "block";
+  resultsSection.scrollIntoView({ behavior: "smooth" });
 }
 
-function renderCountryBar(countryDist, totalReviews) {
-  countryDistBar.innerHTML = "";
-  const pcts = countryDist.percentages || {};
-  const cnts = countryDist.counts || {};
-
-  const keys = Object.keys(pcts);
-  if (!keys.length) {
-    countryDistBar.innerHTML = `<span class="metric-sub">Coğrafi veri bulunamadı</span>`;
+function renderCategoryList(containerEl, items) {
+  containerEl.innerHTML = "";
+  if (!items || items.length === 0) {
+    containerEl.innerHTML = '<div class="feature-item-desc">Öne çıkan kayıt bulunamadı.</div>';
     return;
   }
 
-  keys.forEach(code => {
-    const chip = document.createElement("div");
-    chip.className = "country-chip";
-    chip.textContent = `${code}: %${pcts[code]} (${cnts[code]} yorum / ${totalReviews} metinli yorum)`;
-    countryDistBar.appendChild(chip);
-  });
-}
+  items.forEach(item => {
+    const el = document.createElement("div");
+    el.className = "feature-item";
 
-function renderKeywordsBar(keywords) {
-  keywordsListBar.innerHTML = "";
-  if (!keywords || !keywords.length) return;
+    let quotesHtml = "";
+    if (item.example_quotes && item.example_quotes.length > 0) {
+      quotesHtml = item.example_quotes.map(q => {
+        const cleanQuote = q.replace(/^["'\s]+|["'\s]+$/g, '').trim();
+        return cleanQuote ? `<div class="feature-quote">"${cleanQuote}"</div>` : '';
+      }).filter(Boolean).join("");
+    }
 
-  keywords.forEach(k => {
-    const badge = document.createElement("div");
-    badge.className = "keyword-badge";
-    badge.textContent = `${k.keyword} (${k.count})`;
-    keywordsListBar.appendChild(badge);
-  });
-}
-
-function hideAll() {
-  loadingSection.classList.remove("visible");
-  errorSection.classList.remove("visible");
-  resultsSection.classList.remove("visible");
-}
-
-function resetBtn() {
-  analyzeBtn.disabled = false;
-  analyzeBtn.textContent = "ANALİZ ET";
-}
-
-function renderFeatures(container, countBadge, features) {
-  container.innerHTML = "";
-  countBadge.textContent = features.length;
-
-  if (!features.length) {
-    container.innerHTML = `<div class="empty-category">Kayıtlı özellik yok</div>`;
-    return;
-  }
-
-  features.forEach((f) => {
-    const item = document.createElement("div");
-    item.className = "feature-item";
-    item.innerHTML = `
-      <div class="feature-title">
-        <span>${escHtml(f.title)}</span>
-        ${f.review_count ? `<span class="feature-review-count">[${f.review_count} Yorum]</span>` : ""}
-      </div>
-      <div class="feature-desc">${escHtml(f.description)}</div>
-      ${f.example_quotes?.length ? `
-        <div class="feature-quotes">
-          ${f.example_quotes.map(q => `<div class="quote">"${escHtml(q)}"</div>`).join("")}
-        </div>
-      ` : ""}
+    el.innerHTML = `
+      <div class="feature-item-title">${item.title} (${item.review_count} Yorum)</div>
+      <div class="feature-item-desc">${item.description}</div>
+      ${quotesHtml}
     `;
 
-    container.appendChild(item);
+    containerEl.appendChild(el);
   });
 }
 
-// Markdown Download
-downloadMdBtn.addEventListener("click", () => {
-  if (!currentReport) return;
+function downloadMarkdownReport(data) {
+  if (!data.markdown_report) return;
 
-  const md = currentReport.markdown_report || generateMarkdown(currentReport);
-  const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+  const blob = new Blob([data.markdown_report], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `revixa-${slugify(currentReport.app_name)}-${dateTimeStr()}.md`;
+  a.href = url;
+  
+  const cleanName = data.app_name.toLowerCase().replace(/[^a-z0-9]/g, "-");
+  a.download = `revixa-${cleanName}-${dateTimeStr()}.md`;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(a.href);
-});
-
-function generateMarkdown(data) {
-  return data.markdown_report || "Rapor oluşturuldu.";
-}
-
-function escHtml(str) {
-  return (str || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-function slugify(str) {
-  return (str || "rapor").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "").slice(0, 40);
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function dateTimeStr() {
-  const d = new Date();
-  const date = d.toISOString().slice(0, 10);
-  const hours = String(d.getHours()).padStart(2, '0');
-  const mins = String(d.getMinutes()).padStart(2, '0');
-  return `${date}_${hours}-${mins}`;
-}
-
-function delay(ms) {
-  return new Promise(r => setTimeout(r, ms));
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm   = String(now.getMonth() + 1).padStart(2, "0");
+  const dd   = String(now.getDate()).padStart(2, "0");
+  const hh   = String(now.getHours()).padStart(2, "0");
+  const min  = String(now.getMinutes()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}_${hh}-${min}`;
 }

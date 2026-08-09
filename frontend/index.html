@@ -13,9 +13,24 @@
 
   <!-- Header -->
   <header class="header">
-    <div class="logo">
-      <span class="logo-text">REVIXA</span>
+    <div class="header-top">
+      <div class="logo">
+        <span class="logo-text">REVIXA</span>
+      </div>
+      
+      <!-- User Auth & Dashboard Bar -->
+      <div class="auth-bar" id="auth-bar">
+        <div id="logged-out-view">
+          <button id="open-auth-modal-btn" class="auth-btn">GİRİŞ YAP / KAYIT OL</button>
+        </div>
+        <div id="logged-in-view" class="hidden">
+          <span id="user-email-display" class="user-email">—</span>
+          <button id="open-apps-modal-btn" class="dashboard-btn">UYGULAMALARIM</button>
+          <button id="logout-btn" class="logout-btn">ÇIKIŞ YAP</button>
+        </div>
+      </div>
     </div>
+
     <p class="header-tagline">
       Google Play Store veya App Store URL'si girin — yapay zeka pazar metriklerini,<br>
       coğrafi dağılımı ve kullanıcı içgörüsünü anında raporlasın.
@@ -60,6 +75,21 @@
                 spellcheck="false"
               />
             </div>
+          </div>
+
+          <!-- Custom Prompt Extension Input -->
+          <div class="custom-prompt-group">
+            <label class="input-label" for="custom-prompt-input">
+              ÖZEL ODAK NOKTASI VE PROMPT İSTEĞİ (OPSİYONEL)
+            </label>
+            <input
+              type="text"
+              id="custom-prompt-input"
+              class="custom-prompt-input"
+              placeholder='Örn: "Özellikle abonelik fiyatı şikayetlerine ve son güncelleme kasmalarına odaklan..."'
+              autocomplete="off"
+              spellcheck="false"
+            />
           </div>
 
           <div class="input-actions-row">
@@ -134,6 +164,9 @@
             <div id="result-meta" class="app-meta">—</div>
           </div>
           <div class="app-info-right">
+            <button id="save-app-btn" class="save-app-btn hidden" title="Bu uygulamayı hesabınıza kaydeder">
+              PANELİME KAYDET (+)
+            </button>
             <span id="ai-badge" class="ai-badge">GEMINI</span>
             <button id="download-md-btn" class="download-btn highlight">
               RAPORU İNDİR (.MD)
@@ -181,9 +214,15 @@
           </div>
 
           <!-- Executive Summary -->
-          <div id="summary-card" class="summary-card">
-            <div class="summary-title">GENEL PAZAR ANALİZ ÖZETİ</div>
+          <div id="summary-card" class="summary-card main-summary-card">
+            <div class="summary-title">[★] GENEL PAZAR ANALİZİ VE STRATEJİK İÇGÖRÜ</div>
             <p id="summary-text" class="summary-text">—</p>
+          </div>
+
+          <!-- Custom Focus & Prompt Extension Findings Card -->
+          <div id="custom-focus-card" class="summary-card highlight-card hidden">
+            <div class="summary-title">[!] ÖZEL ODAK NOKTASI İNCELEMESİ VE İÇGÖRÜSÜ</div>
+            <p id="custom-focus-text" class="summary-text">—</p>
           </div>
 
           <!-- Categorized Features Grid -->
@@ -224,6 +263,54 @@
 
     </div>
   </main>
+
+  <!-- Auth Modal -->
+  <div id="auth-modal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-title">REVIXA KULLANICI GİRİŞİ</span>
+        <button id="close-auth-modal-btn" class="modal-close-btn">&times;</button>
+      </div>
+
+      <div class="auth-tabs">
+        <button id="tab-login-btn" class="auth-tab-btn active">GİRİŞ YAP</button>
+        <button id="tab-register-btn" class="auth-tab-btn">KAYIT OL</button>
+      </div>
+
+      <form id="auth-form" class="modal-body">
+        <div class="input-field-group">
+          <label class="input-label" for="auth-email">E-POSTA ADRESİ</label>
+          <input type="email" id="auth-email" class="url-input" placeholder="ornek@revixa.com" required />
+        </div>
+        
+        <div class="input-field-group" style="margin-top: 16px;">
+          <label class="input-label" for="auth-password">PAROLA</label>
+          <input type="password" id="auth-password" class="url-input" placeholder="••••••••" required />
+        </div>
+
+        <button type="submit" id="auth-submit-btn" class="analyze-btn" style="margin-top: 24px; width: 100%;">
+          GİRİŞ YAP
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Saved Apps Dashboard Modal -->
+  <div id="apps-modal" class="modal-backdrop hidden">
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <span class="modal-title">KAYDETTİĞİM UYGULAMALAR (PANEL)</span>
+        <button id="close-apps-modal-btn" class="modal-close-btn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-subtitle">Kaydedilmiş uygulamalarınıza tek tıkla tıklayarak anında analiz başlatabilirsiniz:</p>
+        <div id="saved-apps-list" class="saved-apps-list">
+          <!-- Apps populated via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Footer Signature -->
   <footer class="footer-credit">

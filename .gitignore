@@ -45,3 +45,6 @@ test_result/
 
 # Agents & Customization Rules
 .agents/
+
+# Pytest Cache
+.pytest_cache/

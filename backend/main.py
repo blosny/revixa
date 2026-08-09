@@ -272,6 +272,7 @@ async def analyze_app(request: Request, body: AnalysisRequest):
             country_dist=country_dist,
             avg_len=avg_len,
             keywords=keywords,
+            custom_prompt_extension=body.custom_prompt_extension
         )
         
         # Önbelleğe kaydet

@@ -20,21 +20,23 @@ from models import (
 
 logger = logging.getLogger("revixa.analyzer")
 
-ANALYSIS_PROMPT = """Sen uzman bir mobil uygulama pazar analistisin. Sana verilen kullanıcı yorumlarını inceleyip pazar analizi raporu çıkaracaksın.
+ANALYSIS_PROMPT = """Sen kıdemli ve üst düzey bir mobil uygulama pazar analistisin. Sana sağlanan kullanıcı yorumlarını büyük bir titizlikle inceleyecek ve detaylı bir pazar analiz raporu oluşturacaksın.
 
 GÖREVİN VE KESİN KURALLARIN:
-1. Yorumları dikkatle incele ve aşağıdaki 3 kategoride EN AZ 2-5 somut konu/özellik çıkar.
-2. "summary": Yorumlardan yola çıkarak uygulamanın genel durumunu anlatan ÖZGÜN ve GERÇEK 2-3 cümlelik Türkçe değerlendirme özeti yaz.
-3. "example_quotes": Özellik hakkındaki GERÇEK kullanıcı yorumlarının TAM CÜMLELERİNİ kesmeden tırnak içinde alıntıla. Kesinlikle sahte metinler YAZMA!
-4. "churn_risk_score": 0 ile 100 arasında uygulamanın müşteri kaybetme riski yüzdesi (Örn: Sildim, üyelik iptali diyenlerin oranına göre).
-5. "version_issue_warning": "Güncellemeden sonra bozuldu/donuyor" diyenler varsa 1 cümlelik güncelleme uyarısı yaz, yoksa "".
-6. "competitor_mentions": Yorumlarda geçen rakip uygulama isimleri varsa çıkar (Örn: {"competitor_name": "Adobe", "mention_count": 3, "context": "Adobe'dan daha pratik"}).
-7. "feature_rankings": Kullanıcıların en çok talep ettiği 3-5 özelliği talep sırasına göre Türkçe liste ver.
+1. Yorumları derinlemesine oku. "liked" (beğenilenler), "needs_improve" (geliştirilmesi gerekenler) ve "bad" (kötü/eksik konular) kategorilerinin HER BİRİ İÇİN KESİNLİKLE EN AZ 3 İLE 6 DETAYLI ÖZELLİK/KONU MADDESİ ÇIKAR. 3'ten az madde çıkarmak kesinlikle YASAKTIR!
+2. "summary": Yorumlardan yola çıkarak uygulamanın pazar performansını, kullanıcı memnuniyetini, ana zayıflıklarını ve stratejik tavsiyeleri içeren KAPSAMLI, ZENGİN VE AKICI 4-6 CÜMLELİK Türkçe bir genel değerlendirme özeti yaz. Kesinlikle yabancı/İngilizce kelime karmaşası ("issues", "positive", "fun being" vb.) kullanma; tamamen doğal Türkçe yaz.
+3. "custom_focus_analysis": Kullanıcı tarafından girilen özel odak noktasını/sorusunu yorumlardaki gerçek verilerle yanıtla. Kullanıcının sorduğu spesifik konuya (donma/kasma, fiyatlandırma, zorluk seviyesi, son güncelleme vb.) dair yorumlardan tespit ettiğin somut bulguları ve yanıtı 3-5 CÜMLELİK detaylı bir paragraf olarak yaz. Özel istek yoksa yorumlardaki kritik bir odak konusunu değerlendir.
+4. "example_quotes": Özellik maddelerindeki GERÇEK kullanıcı alıntılarını al ve yorumda geçen kullanıcının adını/yazarını mutlaka ekle (Örn: "\"Grafikler ve sesler harika\" — @KullaniciAdi"). Gerçek kullanıcı isimlerini verideki yazar bilgisinden doğrudan kullan.
+5. "churn_risk_score": 0 ile 100 arasında uygulamanın müşteri kaybetme riski yüzdesi.
+6. "version_issue_warning": "Güncellemeden sonra bozuldu/donuyor/açılmıyor" diyenler varsa 1-2 cümlelik kritik güncelleme uyarısı yaz, yoksa "".
+7. "competitor_mentions": Yorumlarda adı geçen rakip uygulamaları tespit et (Örn: {"competitor_name": "Balatro", "mention_count": 5, "context": "Balatro benzeri oyun mekaniği"}).
+8. "feature_rankings": Kullanıcıların en çok talep ettiği 3-5 özelliği öncelik sırasına göre Türkçe liste olarak belirt.
 
 HER ZAMAN SADECE AŞAĞIDAKİ GEÇERLİ JSON YAPISINI DÖNDÜR:
 
 {
   "summary": "",
+  "custom_focus_analysis": "",
   "churn_risk_score": 15.0,
   "version_issue_warning": "",
   "competitor_mentions": [],
@@ -43,7 +45,7 @@ HER ZAMAN SADECE AŞAĞIDAKİ GEÇERLİ JSON YAPISINI DÖNDÜR:
     {
       "title": "",
       "description": "",
-      "review_count": 0,
+      "review_count": 1,
       "example_quotes": []
     }
   ],
@@ -51,7 +53,7 @@ HER ZAMAN SADECE AŞAĞIDAKİ GEÇERLİ JSON YAPISINI DÖNDÜR:
     {
       "title": "",
       "description": "",
-      "review_count": 0,
+      "review_count": 1,
       "example_quotes": []
     }
   ],
@@ -59,7 +61,7 @@ HER ZAMAN SADECE AŞAĞIDAKİ GEÇERLİ JSON YAPISINI DÖNDÜR:
     {
       "title": "",
       "description": "",
-      "review_count": 0,
+      "review_count": 1,
       "example_quotes": []
     }
   ]
@@ -163,6 +165,7 @@ def _parse_ai_response(raw: str, app_name: str, platform: Platform,
         avg_review_length=avg_len,
         churn_risk_score=churn_risk,
         version_issue_warning=str(data.get("version_issue_warning", "")),
+        custom_focus_analysis=str(data.get("custom_focus_analysis", "")),
         competitor_mentions=parse_competitors(data.get("competitor_mentions", [])),
         feature_rankings=list(data.get("feature_rankings", [])),
         summary=summary,
@@ -194,9 +197,13 @@ class GeminiAnalyzer:
     def analyze(self, reviews: list[RawReview], app_name: str, platform: Platform,
                 metadata: AppMetadata, rating_dist: RatingDistribution,
                 country_dist: CountryDistribution, avg_len: int,
-                keywords: list[KeywordCount]) -> AnalysisResult:
+                keywords: list[KeywordCount],
+                custom_prompt_extension: str | None = None) -> AnalysisResult:
         reviews_text = _build_reviews_text(reviews, max_chars=12000)
-        prompt = ANALYSIS_PROMPT + reviews_text
+        prompt = ANALYSIS_PROMPT
+        if custom_prompt_extension and custom_prompt_extension.strip():
+            prompt += f"\n\nKULLANICI ÖZEL ANALİZ İSTEĞİ VE ODAK NOKTASI:\n{custom_prompt_extension.strip()}\nLütfen analizi yaparken yukarıdaki özel istek ve odak noktasına özel bir yer ayır.\n\n"
+        prompt += reviews_text
 
         models_to_try = ["gemini-3.6-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-flash-latest"]
         raw = None
@@ -261,9 +268,13 @@ class OllamaAnalyzer:
     def analyze(self, reviews: list[RawReview], app_name: str, platform: Platform,
                 metadata: AppMetadata, rating_dist: RatingDistribution,
                 country_dist: CountryDistribution, avg_len: int,
-                keywords: list[KeywordCount]) -> AnalysisResult:
+                keywords: list[KeywordCount],
+                custom_prompt_extension: str | None = None) -> AnalysisResult:
         reviews_text = _build_reviews_text(reviews, max_chars=8000)
-        prompt = ANALYSIS_PROMPT + reviews_text
+        prompt = ANALYSIS_PROMPT
+        if custom_prompt_extension and custom_prompt_extension.strip():
+            prompt += f"\n\nKULLANICI ÖZEL ANALİZ İSTEĞİ VE ODAK NOKTASI:\n{custom_prompt_extension.strip()}\nLütfen analizi yaparken yukarıdaki özel istek ve odak noktasına özel bir yer ayır.\n\n"
+        prompt += reviews_text
 
         logger.info(f"Ollama analizi başlatılıyor ({len(reviews)} yorum)...")
 
@@ -282,7 +293,8 @@ class OllamaAnalyzer:
                     },
                 },
             )
-            response.raise_for_status()
+            if response.status_code != 200:
+                raise RuntimeError(f"Ollama HTTP {response.status_code}: {response.text}")
             raw = response.json().get("response", "")
 
         return _parse_ai_response(
@@ -308,10 +320,14 @@ class AIRouter:
     def analyze(self, reviews: list[RawReview], app_name: str, platform: Platform,
                 metadata: AppMetadata, rating_dist: RatingDistribution,
                 country_dist: CountryDistribution, avg_len: int,
-                keywords: list[KeywordCount]) -> AnalysisResult:
+                keywords: list[KeywordCount],
+                custom_prompt_extension: str | None = None) -> AnalysisResult:
         if self._gemini:
             try:
-                return self._gemini.analyze(reviews, app_name, platform, metadata, rating_dist, country_dist, avg_len, keywords)
+                return self._gemini.analyze(
+                    reviews, app_name, platform, metadata, rating_dist,
+                    country_dist, avg_len, keywords, custom_prompt_extension
+                )
             except Exception as e:
                 logger.warning(f"Gemini hatası: {e} -> Ollama servisine geçiliyor...")
 
@@ -400,6 +416,16 @@ def _build_markdown_report(result: AnalysisResult) -> str:
         "### 3. GENEL PAZAR ANALİZ ÖZETİ",
         "",
         result.summary or "_Özet oluşturulamadı._",
+    ]
+
+    if result.custom_focus_analysis:
+        lines += [
+            "",
+            "#### ÖZEL ODAK NOKTASI İNCELEMESİ VE PROMPT YANITI:",
+            result.custom_focus_analysis
+        ]
+
+    lines += [
         "",
         "---",
         "",
