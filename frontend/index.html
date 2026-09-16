@@ -175,8 +175,14 @@
               PANELİME KAYDET (+)
             </button>
             <span id="ai-badge" class="ai-badge">GEMINI</span>
-            <button id="download-md-btn" class="download-btn highlight" data-i18n="download_md">
+            <button id="download-md-btn" class="download-btn" data-i18n="download_md">
               RAPORU İNDİR (.MD)
+            </button>
+            <button id="download-html-btn" class="download-btn" data-i18n="download_html">
+              RAPORU İNDİR (.HTML)
+            </button>
+            <button id="download-pdf-btn" class="download-btn highlight" data-i18n="download_pdf">
+              PDF / YAZDIR 🖨️
             </button>
           </div>
         </div>
@@ -224,6 +230,50 @@
             <div class="summary-title" data-i18n="telemetry_title">COĞRAFİ ÜLKE DAĞILIMI VE EN ÇOK TEKRARLANAN KELİMELER</div>
             <div id="country-distribution-bar" class="country-distribution-bar"></div>
             <div id="keywords-list-bar" class="keywords-list-bar"></div>
+          </div>
+
+          <!-- Visual Analytics & Star Distribution Histogram Card -->
+          <div id="visual-analytics-card" class="summary-card visual-analytics-card">
+            <div class="summary-title" data-i18n="visual_analytics_title">[📊] GÖRSEL ANALİTİK VE YILDIZ DAĞILIMI HİSTOGRAMI</div>
+            <div class="visual-analytics-grid">
+              
+              <!-- Star Distribution Histogram -->
+              <div class="histogram-box">
+                <div class="histogram-subtitle" data-i18n="star_hist_subtitle">MAĞAZA YILDIZ DAĞILIMI (5★ ➔ 1★)</div>
+                <div id="star-histogram-bars" class="star-histogram-bars">
+                  <!-- Generated via JS -->
+                </div>
+              </div>
+
+              <!-- Sentiment Visual Donut & Stacked Bar -->
+              <div class="sentiment-visual-box">
+                <div class="histogram-subtitle" data-i18n="sentiment_visual_subtitle">DUYGU ORANLARI VE KULLANICI ALGISI</div>
+                <div id="sentiment-svg-container" class="sentiment-svg-container">
+                  <!-- SVG Chart generated via JS -->
+                </div>
+                <div id="sentiment-legend-bars" class="sentiment-legend-bars">
+                  <!-- Legend bars generated via JS -->
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Side-by-Side Competitor Benchmarking Card -->
+          <div id="benchmarking-card" class="summary-card benchmark-card">
+            <div class="summary-title" data-i18n="benchmark_title">[⚖️] YAN YANA RAKİP KARŞILAŞTIRMA VE BENCHMARKİNG ENGINE</div>
+            <p class="benchmark-desc" data-i18n="benchmark_desc">Analiz edilen uygulamayı tespit edilen rakiplerle veya başka bir uygulama bağlantısıyla yan yana kıyaslayın:</p>
+            
+            <div class="benchmark-controls">
+              <input type="url" id="benchmark-url-input" class="url-input benchmark-input" placeholder="Rakip uygulama URL'si (Play Store veya App Store)..." autocomplete="off" spellcheck="false" />
+              <button id="run-benchmark-btn" class="analyze-btn benchmark-btn" data-i18n="run_benchmark">KARŞILAŞTIR (BENCHMARK)</button>
+            </div>
+
+            <div id="benchmark-quick-pills" class="benchmark-quick-pills"></div>
+
+            <div id="benchmark-results-grid" class="benchmark-results-grid hidden">
+              <!-- Side-by-Side comparison cards generated dynamically -->
+            </div>
           </div>
 
           <!-- Executive Summary -->
