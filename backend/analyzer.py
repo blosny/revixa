@@ -84,12 +84,18 @@ def _build_reviews_text(reviews: list[RawReview], max_chars: int = 15000) -> str
 
 
 def calculate_sentiment_distribution(reviews: list[RawReview]) -> SentimentDistribution:
+    """
+    Kullanıcı yorumlarının puanlarına göre duygu dağılımı yüzdelerini hesaplar.
+    - >= 4.0 : Pozitif (4 ve 5 yıldız)
+    - 2.0 < puan < 4.0 : Nötr (3 yıldız ve 2.5, 3.5 gibi kesirli puanlar)
+    - <= 2.0 : Negatif (1 ve 2 yıldız)
+    """
     if not reviews:
         return SentimentDistribution()
 
     total = len(reviews)
     pos = sum(1 for r in reviews if r.rating >= 4.0)
-    neu = sum(1 for r in reviews if r.rating == 3.0)
+    neu = sum(1 for r in reviews if 2.0 < r.rating < 4.0)
     neg = sum(1 for r in reviews if r.rating <= 2.0)
 
     return SentimentDistribution(
@@ -117,13 +123,15 @@ def _parse_ai_response(raw: str, app_name: str, platform: Platform,
     def parse_features(items: list) -> list[FeatureItem]:
         result = []
         for item in (items or []):
-            title = item.get("title", "").strip()
+            if not isinstance(item, dict):
+                continue
+            title = str(item.get("title", "")).strip()
             if not title or "başlık" in title.lower():
                 continue
             quotes = [q for q in item.get("example_quotes", []) if isinstance(q, str) and len(q) > 3 and "alıntı" not in q.lower()]
             result.append(FeatureItem(
                 title=title,
-                description=item.get("description", ""),
+                description=str(item.get("description", "")),
                 review_count=int(item.get("review_count", 1)),
                 example_quotes=quotes,
             ))
@@ -140,6 +148,24 @@ def _parse_ai_response(raw: str, app_name: str, platform: Platform,
                 ))
         return res
 
+    def parse_feature_rankings(items) -> list[str]:
+        res = []
+        if not items:
+            return res
+        if isinstance(items, list):
+            for item in items:
+                if isinstance(item, str) and item.strip():
+                    res.append(item.strip())
+                elif isinstance(item, list):
+                    for sub in item:
+                        if isinstance(sub, str) and sub.strip():
+                            res.append(sub.strip())
+                elif isinstance(item, dict):
+                    title = item.get("title") or item.get("name") or str(item)
+                    if title and str(title).strip():
+                        res.append(str(title).strip())
+        return res
+
     summary = (data.get("summary") or "").strip()
     if not summary or "özeti" in summary.lower() and len(summary) < 80:
         pos_cnt = sum(1 for r in reviews if r.rating >= 4)
@@ -148,7 +174,13 @@ def _parse_ai_response(raw: str, app_name: str, platform: Platform,
     churn_keywords = ["sildim", "siliyorum", "iptal", "berbat", "bok", "çöp", "kötü", "uninstall", "delete"]
     churn_count = sum(1 for r in reviews if any(k in r.content.lower() for k in churn_keywords))
     calculated_churn_score = round((churn_count / len(reviews)) * 100, 1) if reviews else 0.0
-    churn_risk = float(data.get("churn_risk_score") or calculated_churn_score)
+
+    # Churn riski skoru 0.0 olduğunda ezilmemesi için 'is not None' kontrolü
+    ai_churn = data.get("churn_risk_score")
+    if ai_churn is not None and isinstance(ai_churn, (int, float)):
+        churn_risk = float(ai_churn)
+    else:
+        churn_risk = calculated_churn_score
 
     sentiment = calculate_sentiment_distribution(reviews)
 
@@ -167,7 +199,7 @@ def _parse_ai_response(raw: str, app_name: str, platform: Platform,
         version_issue_warning=str(data.get("version_issue_warning", "")),
         custom_focus_analysis=str(data.get("custom_focus_analysis", "")),
         competitor_mentions=parse_competitors(data.get("competitor_mentions", [])),
-        feature_rankings=list(data.get("feature_rankings", [])),
+        feature_rankings=parse_feature_rankings(data.get("feature_rankings", [])),
         summary=summary,
         liked=parse_features(data.get("liked", [])),
         needs_improve=parse_features(data.get("needs_improve", [])),
@@ -211,7 +243,8 @@ class GeminiAnalyzer:
             prompt += f"\n\nKULLANICI ÖZEL ANALİZ İSTEĞİ VE ODAK NOKTASI:\n{custom_prompt_extension.strip()}\nLütfen analizi yaparken yukarıdaki özel istek ve odak noktasına özel bir yer ayır.\n\n"
         prompt += reviews_text
 
-        models_to_try = ["gemini-3.6-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-flash-latest"]
+        # Var olmayan 'gemini-3.6-flash' listeden çıkartıldı
+        models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-flash-latest"]
         raw = None
         last_err = None
 

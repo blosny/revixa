@@ -12,6 +12,7 @@ import sys
 import os
 import re
 import logging
+import asyncio
 from urllib.parse import urlparse
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -97,7 +98,32 @@ def on_startup():
 
 @app.get("/health", tags=["System"])
 async def health_check():
+    """Sistem genel sağlık kontrolü."""
     return {"status": "ok", "service": "Revixa API v2.0"}
+
+
+@app.get("/health/live", tags=["System"])
+async def liveness_check():
+    """DevOps Container Liveness Probe (Uygulamanın ayakta olup olmadığını doğrular)."""
+    return {"status": "alive", "service": "Revixa API v2.0"}
+
+
+@app.get("/health/ready", tags=["System"])
+async def readiness_check():
+    """DevOps Container Readiness Probe (Veritabanı ve AI servislerinin istek almaya hazır olduğunu doğrular)."""
+    try:
+        router = get_router()
+        status_info = router.get_status()
+        return {
+            "status": "ready",
+            "database": "connected",
+            "ai_router": status_info.model_dump()
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Servis henüz hazır değil: {str(e)}"
+        )
 
 
 # ─────────────────────────────────────────────
@@ -276,10 +302,12 @@ async def analyze_app(request: Request, body: AnalysisRequest):
             detail=f"Yorumlar ve metrikler çekilirken hata oluştu: {str(e)}"
         )
 
-    # 4. AI Analysis
+    # 4. AI Analysis (Event Loop Unblocking via asyncio.to_thread)
     try:
         router = get_router()
-        result = router.analyze(
+        # Senkron HTTP ve AI çağrılarını async thread havuzuna devrederek ana event loop'un dondurulması önlendi
+        result = await asyncio.to_thread(
+            router.analyze,
             reviews=reviews,
             app_name=meta.title,
             platform=detected_platform,

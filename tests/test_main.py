@@ -19,6 +19,19 @@ def test_health_check():
     assert response.json()["status"] == "ok"
 
 
+def test_liveness_probe():
+    response = client.get("/health/live")
+    assert response.status_code == 200
+    assert response.json()["status"] == "alive"
+
+
+def test_readiness_probe():
+    response = client.get("/health/ready")
+    assert response.status_code == 200
+    assert response.json()["status"] == "ready"
+    assert "database" in response.json()
+
+
 def test_ai_status():
     response = client.get("/ai-status")
     assert response.status_code == 200
