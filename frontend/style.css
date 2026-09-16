@@ -1153,3 +1153,55 @@ body {
     display: none;
   }
 }
+
+/* ─── High-Contrast PDF Print Styles ─── */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-size: 12pt;
+  }
+
+  .header, .input-section, .loading-section, .error-section, 
+  .footer-credit, .app-info-right, .benchmark-controls, 
+  .benchmark-quick-pills, .modal-backdrop {
+    display: none !important;
+  }
+
+  .container {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .app-info-bar, .metric-card, .summary-card, .telemetry-bar-card,
+  .visual-analytics-card, .benchmark-card, .category-card, .histogram-box, .sentiment-visual-box {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 1px solid #000000 !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+  }
+
+  .app-name, .metric-value, .summary-title, .star-label, .benchmark-app-title, .category-title {
+    color: #000000 !important;
+  }
+
+  .metric-sub, .app-meta, .summary-text, .metric-title, .star-value, .benchmark-metric-label {
+    color: #333333 !important;
+  }
+
+  .star-track {
+    background: #eeeeee !important;
+    border: 1px solid #000000 !important;
+  }
+
+  .star-fill {
+    background: #000000 !important;
+  }
+
+  .feature-item {
+    border-bottom: 1px solid #ddd !important;
+    page-break-inside: avoid;
+  }
+}

@@ -34,6 +34,8 @@ const resultAppName   = document.getElementById("result-app-name");
 const resultMeta      = document.getElementById("result-meta");
 const aiBadge         = document.getElementById("ai-badge");
 const downloadMdBtn   = document.getElementById("download-md-btn");
+const downloadHtmlBtn = document.getElementById("download-html-btn");
+const downloadPdfBtn  = document.getElementById("download-pdf-btn");
 const saveAppBtn      = document.getElementById("save-app-btn");
 
 // Auth DOM
@@ -122,6 +124,8 @@ const translations = {
     analyze_btn: "ANALİZ ET",
     save_panel: "PANELİME KAYDET (+)",
     download_md: "RAPORU İNDİR (.MD)",
+    download_html: "RAPORU İNDİR (.HTML)",
+    download_pdf: "PDF / YAZDIR 🖨️",
     avg_rating: "ORTALAMA PUAN",
     sentiment_dist: "DUYGU DAĞILIMI",
     churn_risk: "CHURN RİSKİ",
@@ -167,6 +171,8 @@ const translations = {
     analyze_btn: "ANALYZE APP",
     save_panel: "SAVE TO DASHBOARD (+)",
     download_md: "DOWNLOAD REPORT (.MD)",
+    download_html: "DOWNLOAD REPORT (.HTML)",
+    download_pdf: "PDF / PRINT 🖨️",
     avg_rating: "AVERAGE RATING",
     sentiment_dist: "SENTIMENT DISTRIBUTION",
     churn_risk: "CHURN RISK",
@@ -734,6 +740,8 @@ function renderResults(data) {
   renderBenchmarking(data);
 
   downloadMdBtn.onclick = () => downloadMarkdownReport(data);
+  if (downloadHtmlBtn) downloadHtmlBtn.onclick = () => downloadHtmlReport(data);
+  if (downloadPdfBtn) downloadPdfBtn.onclick = () => printPdfReport();
 
   resultsSection.style.display = "block";
   resultsSection.scrollIntoView({ behavior: "smooth" });
@@ -982,5 +990,98 @@ function dateTimeStr() {
   const hh   = String(now.getHours()).padStart(2, "0");
   const min  = String(now.getMinutes()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}_${hh}-${min}`;
+}
+
+function downloadHtmlReport(data) {
+  if (!data) return;
+
+  const htmlContent = `<!DOCTYPE html>
+<html lang="${currentLang}">
+<head>
+  <meta charset="UTF-8">
+  <title>REVIXA Report — ${data.app_name}</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #000; color: #fff; padding: 40px; line-height: 1.6; max-width: 1000px; margin: 0 auto; }
+    .card { background: #09090b; border: 1px solid #27272a; padding: 24px; margin-bottom: 24px; }
+    h1 { font-size: 2rem; color: #fff; margin-bottom: 8px; font-family: monospace; text-transform: uppercase; }
+    .meta { color: #a1a1aa; font-size: 0.9rem; margin-bottom: 20px; font-family: monospace; }
+    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+    .metric-card { background: #000; border: 1px solid #27272a; padding: 16px; text-align: center; }
+    .metric-val { font-size: 1.5rem; font-weight: bold; color: #fff; font-family: monospace; }
+    .metric-lbl { font-size: 0.8rem; color: #a1a1aa; font-family: monospace; }
+    .section-title { font-size: 1.1rem; font-weight: bold; color: #fff; font-family: monospace; margin-bottom: 12px; border-bottom: 1px dashed #27272a; padding-bottom: 8px; }
+    .feature-item { border-bottom: 1px dashed #27272a; padding: 12px 0; }
+    .feature-title { font-weight: bold; color: #fff; font-family: monospace; }
+    .quote { font-style: italic; color: #a1a1aa; font-size: 0.85rem; padding-left: 12px; border-left: 2px solid #fff; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>${data.app_name.toUpperCase()} — PAZAR ZEKASI RAPORU</h1>
+    <div class="meta">${data.metadata.developer} • Rating: ${data.metadata.average_rating} / 5.0 (${data.metadata.total_ratings.toLocaleString()} Ratings) • Platform: ${data.platform.toUpperCase()}</div>
+    
+    <div class="metrics">
+      <div class="metric-card">
+        <div class="metric-lbl">ORTALAMA PUAN</div>
+        <div class="metric-val">${data.metadata.average_rating} / 5.0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-lbl">POZİTİF DUYGU</div>
+        <div class="metric-val">%${data.sentiment_dist.positive_pct}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-lbl">CHURN RİSKİ</div>
+        <div class="metric-val">%${data.churn_risk_score !== undefined ? data.churn_risk_score : 0}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">[★] GENEL PAZAR ANALİZİ VE STRATEJİK İÇGÖRÜ</div>
+    <p>${data.summary}</p>
+  </div>
+
+  <div class="card">
+    <div class="section-title">[+] BEĞENİLEN ÖZELLİKLER</div>
+    ${(data.liked || []).map(item => `
+      <div class="feature-item">
+        <div class="feature-title">${item.title} (${item.review_count} Yorum)</div>
+        <div>${item.description}</div>
+        ${(item.example_quotes || []).map(q => `<div class="quote">"${q}"</div>`).join('')}
+      </div>
+    `).join('')}
+  </div>
+
+  <div class="card">
+    <div class="section-title">[-] KÖTÜ / EKSİK ÖZELLİKLER</div>
+    ${(data.bad || []).map(item => `
+      <div class="feature-item">
+        <div class="feature-title">${item.title} (${item.review_count} Yorum)</div>
+        <div>${item.description}</div>
+        ${(item.example_quotes || []).map(q => `<div class="quote">"${q}"</div>`).join('')}
+      </div>
+    `).join('')}
+  </div>
+
+  <div style="text-align: center; color: #a1a1aa; font-family: monospace; font-size: 0.8rem; margin-top: 40px;">
+    Generated by REVIXA v2.0 • Market Intelligence Automation
+  </div>
+</body>
+</html>`;
+
+  const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const cleanName = data.app_name.toLowerCase().replace(/[^a-z0-9]/g, "-");
+  a.download = `revixa-${cleanName}-${dateTimeStr()}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function printPdfReport() {
+  window.print();
 }
 
