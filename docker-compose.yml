@@ -1,6 +1,11 @@
+# =========================================================
+# Revixa Multi-Container Docker Compose Orchestration
+# =========================================================
+
 version: '3.8'
 
 services:
+  # FastAPI Backend Servisi
   backend:
     build:
       context: .
@@ -12,8 +17,18 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
       - OLLAMA_MODEL=llama3.2
+    volumes:
+      # Veritabanlarının (revixa_v2.db ve revixa_cache.db) kalıcı (persistent) tutulması
+      - revixa-db-data:/app/backend/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\" || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
 
+  # Nginx Frontend Web Sunucusu
   frontend:
     image: nginx:alpine
     container_name: revixa-frontend
@@ -23,5 +38,10 @@ services:
       - ./frontend:/usr/share/nginx/html:ro
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
+
+# SQLite ve önbellek verilerinin kalıcı depolama birimi (Named Volume)
+volumes:
+  revixa-db-data:

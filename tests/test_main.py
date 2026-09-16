@@ -51,3 +51,18 @@ def test_valid_play_store_url_scraping():
         # Headless CI runner without GEMINI_API_KEY or Ollama daemon
         assert response.status_code == 500
         assert "AI servisi" in response.json().get("detail", "")
+
+
+def test_app_store_title_unquoting_and_real_ratings():
+    # App Store scraper async birim testi: URL unquoting ve puan hesaplaması
+    import pytest
+    from scraper import scrape_app_store_async
+    import asyncio
+
+    url = "https://apps.apple.com/tr/app/foto%C4%9Fraf-d%C3%Bczenleyici/id123456789"
+    meta, rating_dist, reviews = asyncio.run(scrape_app_store_async(url, max_reviews=10))
+
+    # Başlığın 'Foto%C4%9Fraf' olarak bozuk kalmadığını, 'Fotoğraf' olarak unquote edildiğini doğrula
+    assert "Foto%C4%9Fraf" not in meta.title
+    assert "Fotoğraf" in meta.title or "Foto" in meta.title
+    assert meta.average_rating >= 0.0

@@ -12,7 +12,7 @@ import logging
 import asyncio
 from typing import Optional
 from collections import Counter
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, unquote
 import httpx
 
 from google_play_scraper import app as gplay_app, reviews as gplay_reviews, Sort
@@ -204,6 +204,12 @@ async def scrape_play_store_async(url: str, max_reviews: int = 0) -> tuple[AppMe
 
 
 async def scrape_app_store_async(url: str, max_reviews: int = 0) -> tuple[AppMetadata, RatingDistribution, list[RawReview]]:
+    """
+    Apple App Store paralel async yorum ve metrik çekme motoru.
+    - URL slug'ından alınan başlık 'unquote' edilerek Türkçe karakter bozulmaları (Foto%C4%9Fraf -> Fotoğraf) düzeltilir.
+    - iTunes RSS kanalından çekilen gerçek yorumların puanları ('im:rating') üzerinden ortalama puan hesaplanır.
+    - Yıldız dağılımı (1..5 yıldız) çekilen gerçek müşteri değerlendirmelerinden dinamik oluşturulur.
+    """
     app_name_slug, country, app_id = extract_appstore_info(url)
     logger.info(f"Parallel Async App Store scraping başlatıldı: {app_name_slug} id={app_id}")
 
@@ -253,14 +259,38 @@ async def scrape_app_store_async(url: str, max_reviews: int = 0) -> tuple[AppMet
                     seen_contents.add(r.content)
                     all_reviews.append(r)
 
+    # App Store URL slug başlığının unquote edilerek düzeltilmesi
+    clean_title = unquote(app_name_slug).replace("-", " ").title()
+
+    # Çekilen gerçek yorumların puanlarından ortalama puan ve yıldız dağılımı hesaplanması
+    star_counts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+    total_score = 0.0
+    valid_ratings_count = 0
+
+    for r in all_reviews:
+        star = int(round(r.rating))
+        if 1 <= star <= 5:
+            star_counts[star] += 1
+            total_score += r.rating
+            valid_ratings_count += 1
+
+    avg_rating = round(total_score / valid_ratings_count, 1) if valid_ratings_count > 0 else 0.0
+
     meta = AppMetadata(
-        title=app_name_slug.replace("-", " ").title(),
+        title=clean_title,
         developer="App Store Developer",
         category="iOS App",
-        average_rating=4.3,
+        average_rating=avg_rating,
         total_ratings=len(all_reviews),
     )
-    rating_dist = RatingDistribution(star_5=len(all_reviews))
+
+    rating_dist = RatingDistribution(
+        star_1=star_counts[1],
+        star_2=star_counts[2],
+        star_3=star_counts[3],
+        star_4=star_counts[4],
+        star_5=star_counts[5],
+    )
 
     if max_reviews > 0:
         all_reviews = all_reviews[:max_reviews]
