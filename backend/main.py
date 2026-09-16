@@ -12,6 +12,7 @@ import sys
 import os
 import re
 import logging
+from urllib.parse import urlparse
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -63,11 +64,26 @@ app.add_middleware(
 
 
 def validate_input_url(url: str):
-    """SSRF ve Zararlı URL Enjeksiyon Koruması."""
+    """
+    SSRF ve Zararlı URL Enjeksiyon Koruması.
+    - Sadece 'https' protokolüne izin verir (http veya yetkisiz şemaları engeller).
+    - 'urllib.parse.urlparse' ile kesin alan adı (netloc) ayrıştırması yapar.
+    - Sadece resmi 'play.google.com' veya 'apps.apple.com' domain'lerini kabul eder.
+    - Domain prefix bypass (Örn: play.google.com.saldirgan.com) saldırılarını kesin olarak engeller.
+    """
     if not url:
         return
     url_str = str(url).strip()
-    if not (url_str.startswith("https://play.google.com") or url_str.startswith("https://apps.apple.com")):
+    try:
+        parsed = urlparse(url_str)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Güvenlik Engeli: Geçersiz URL formatı."
+        )
+
+    # Protokol (https) ve Kesin Alan Adı (netloc) kontrolü
+    if parsed.scheme != "https" or parsed.netloc not in ("play.google.com", "apps.apple.com"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Güvenlik Engeli: Sadece resmi 'https://play.google.com' veya 'https://apps.apple.com' adreslerine izin verilmektedir."
@@ -229,7 +245,7 @@ async def analyze_app(request: Request, body: AnalysisRequest):
     validate_input_url(body.play_url)
     validate_input_url(body.appstore_url)
 
-    cache_key = f"{body.play_url or ''}_{body.appstore_url or ''}_{body.url or ''}_{body.max_reviews}"
+    cache_key = f"{body.play_url or ''}_{body.appstore_url or ''}_{body.url or ''}_{body.max_reviews}_{body.language or 'tr'}_{body.custom_prompt_extension or ''}"
     
     # 2. Check Cache
     cached_data = get_cached_analysis(cache_key)
@@ -286,3 +302,9 @@ async def analyze_app(request: Request, body: AnalysisRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Yorumlar analiz edilirken hata oluştu: {str(e)}"
         )
+
+
+if __name__ == "__main__":
+    # Geliştirme ortamında 'python backend/main.py' ile uvicorn web sunucusunu doğrudan başlatır.
+    import uvicorn
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

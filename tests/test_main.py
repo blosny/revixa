@@ -33,6 +33,13 @@ def test_invalid_url_ssrf_protection():
     assert "Güvenlik Engeli" in response.json()["detail"]
 
 
+def test_ssrf_domain_prefix_bypass_prevention():
+    # play.google.com.saldirgan.com gibi domain prefix bypass denemesi
+    response = client.post("/analyze", json={"url": "https://play.google.com.saldirgan.com/malicious"})
+    assert response.status_code == 400
+    assert "Güvenlik Engeli" in response.json()["detail"]
+
+
 def test_valid_play_store_url_scraping():
     response = client.post("/analyze", json={"url": "https://play.google.com/store/apps/details?id=com.acabaneyesem", "max_reviews": 10})
     if response.status_code == 200:
