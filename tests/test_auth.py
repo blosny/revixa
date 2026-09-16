@@ -53,3 +53,36 @@ def test_user_register_and_login():
     assert me_res.status_code == 200
     me_data = me_res.json()
     assert me_data["email"] == test_email
+
+
+def test_production_jwt_secret_validation():
+    # Production modunda JWT_SECRET_KEY yoksa ValueError fırlatılması testi
+    old_env = os.environ.get("ENVIRONMENT")
+    old_secret = os.environ.get("JWT_SECRET_KEY")
+
+    try:
+        os.environ["ENVIRONMENT"] = "production"
+        if "JWT_SECRET_KEY" in os.environ:
+            del os.environ["JWT_SECRET_KEY"]
+
+        import importlib
+        import auth
+
+        with pytest.raises(ValueError, match="JWT_SECRET_KEY"):
+            importlib.reload(auth)
+    finally:
+        # Restore environment
+        if old_env is not None:
+            os.environ["ENVIRONMENT"] = old_env
+        else:
+            os.environ.pop("ENVIRONMENT", None)
+
+        if old_secret is not None:
+            os.environ["JWT_SECRET_KEY"] = old_secret
+        else:
+            os.environ.pop("JWT_SECRET_KEY", None)
+
+        import importlib
+        import auth
+        importlib.reload(auth)
+
