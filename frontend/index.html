@@ -200,6 +200,12 @@
             </div>
 
             <div class="metric-card">
+              <div class="metric-title" data-i18n="churn_risk">CHURN RİSKİ</div>
+              <div id="metric-churn-score" class="metric-value">—</div>
+              <div id="metric-churn-sub" class="metric-sub" data-i18n="churn_sub">Müşteri Kaybetme Riski</div>
+            </div>
+
+            <div class="metric-card">
               <div class="metric-title" data-i18n="app_identity">UYGULAMA KİMLİĞİ</div>
               <div id="metric-developer" class="metric-value-sm">—</div>
               <div id="metric-category" class="metric-sub">—</div>
@@ -230,6 +236,24 @@
           <div id="custom-focus-card" class="summary-card highlight-card hidden">
             <div class="summary-title" data-i18n="custom_focus_title">[!] ÖZEL ODAK NOKTASI İNCELEMESİ VE İÇGÖRÜSÜ</div>
             <p id="custom-focus-text" class="summary-text">—</p>
+          </div>
+
+          <!-- Version Issue Warning Alert Card -->
+          <div id="version-warning-card" class="summary-card warning-card hidden">
+            <div class="summary-title warning-title" data-i18n="version_warning_title">[!] GÜNCELLEME VE SÜRÜM HATASI UYARISI</div>
+            <p id="version-warning-text" class="summary-text">—</p>
+          </div>
+
+          <!-- Strategic Insights Grid (Competitors & Feature Rankings) -->
+          <div id="insights-grid" class="insights-grid hidden">
+            <div class="summary-card insight-card">
+              <div class="summary-title" data-i18n="rankings_title">[#] EN ÇOK TALEP EDİLEN ÖZELLİK SIRALAMASI</div>
+              <ol id="feature-rankings-list" class="rankings-list"></ol>
+            </div>
+            <div class="summary-card insight-card">
+              <div class="summary-title" data-i18n="competitors_title">[⚡] RAKİP UYGULAMA BAHİSLERİ RADARI</div>
+              <div id="competitors-list" class="competitors-list"></div>
+            </div>
           </div>
 
           <!-- Categorized Features Grid -->

@@ -64,6 +64,8 @@ const metricRating      = document.getElementById("metric-rating");
 const metricRatingsCnt  = document.getElementById("metric-ratings-count");
 const metricSentiment   = document.getElementById("metric-sentiment");
 const metricSentiSub    = document.getElementById("metric-sentiment-sub");
+const metricChurnScore  = document.getElementById("metric-churn-score");
+const metricChurnSub    = document.getElementById("metric-churn-sub");
 const metricDeveloper   = document.getElementById("metric-developer");
 const metricCategory    = document.getElementById("metric-category");
 const metricLength      = document.getElementById("metric-length");
@@ -74,6 +76,13 @@ const summaryText     = document.getElementById("summary-text");
 
 const customFocusCard = document.getElementById("custom-focus-card");
 const customFocusText = document.getElementById("custom-focus-text");
+
+const versionWarningCard = document.getElementById("version-warning-card");
+const versionWarningText = document.getElementById("version-warning-text");
+
+const insightsGrid        = document.getElementById("insights-grid");
+const featureRankingsList = document.getElementById("feature-rankings-list");
+const competitorsList     = document.getElementById("competitors-list");
 
 const likedList   = document.getElementById("liked-list");
 const improveList = document.getElementById("improve-list");
@@ -105,6 +114,8 @@ const translations = {
     download_md: "RAPORU İNDİR (.MD)",
     avg_rating: "ORTALAMA PUAN",
     sentiment_dist: "DUYGU DAĞILIMI",
+    churn_risk: "CHURN RİSKİ",
+    churn_sub: "Müşteri Kaybetme Riski",
     app_identity: "UYGULAMA KİMLİĞİ",
     avg_length: "ORTALAMA YORUM UZUNLUĞU",
     chars_per_review: "Karakter / Yorum",
@@ -115,6 +126,9 @@ const translations = {
     telemetry_title: "COĞRAFİ ÜLKE DAĞILIMI VE EN ÇOK TEKRARLANAN KELİMELER",
     summary_title: "[★] GENEL PAZAR ANALİZİ VE STRATEJİK İÇGÖRÜ",
     custom_focus_title: "[!] ÖZEL ODAK NOKTASI İNCELEMESİ VE İÇGÖRÜSÜ",
+    version_warning_title: "[!] GÜNCELLEME VE SÜRÜM HATASI UYARISI",
+    rankings_title: "[#] EN ÇOK TALEP EDİLEN ÖZELLİK SIRALAMASI",
+    competitors_title: "[⚡] RAKİP UYGULAMA BAHİSLERİ RADARI",
     liked_title: "[+] BEĞENİLEN ÖZELLİKLER",
     improve_title: "[~] GELİŞTİRİLMESİ GEREKEN",
     bad_title: "[-] KÖTÜ / EKSİK ÖZELLİKLER"
@@ -139,6 +153,8 @@ const translations = {
     download_md: "DOWNLOAD REPORT (.MD)",
     avg_rating: "AVERAGE RATING",
     sentiment_dist: "SENTIMENT DISTRIBUTION",
+    churn_risk: "CHURN RISK",
+    churn_sub: "Customer Churn Risk",
     app_identity: "APP IDENTITY",
     avg_length: "AVG REVIEW LENGTH",
     chars_per_review: "Characters / Review",
@@ -149,6 +165,9 @@ const translations = {
     telemetry_title: "GEOGRAPHIC COUNTRY DISTRIBUTION & TOP KEYWORDS",
     summary_title: "[★] EXECUTIVE MARKET ANALYSIS & STRATEGIC INSIGHTS",
     custom_focus_title: "[!] CUSTOM FOCUS ANALYSIS & INSIGHTS",
+    version_warning_title: "[!] CRITICAL VERSION / UPDATE WARNING",
+    rankings_title: "[#] TOP DEMANDED FEATURE RANKINGS",
+    competitors_title: "[⚡] COMPETITOR MENTIONS RADAR",
     liked_title: "[+] LIKED FEATURES",
     improve_title: "[~] NEEDS IMPROVEMENT",
     bad_title: "[-] BAD / MISSING FEATURES"
@@ -591,12 +610,68 @@ function renderResults(data) {
 
   metricLength.textContent = currentLang === "en" ? `${data.avg_review_length} chars` : `${data.avg_review_length} karakter`;
 
+  // Render Churn Risk Metric
+  if (metricChurnScore) {
+    metricChurnScore.textContent = `%${data.churn_risk_score !== undefined ? data.churn_risk_score : 0}`;
+  }
+
   // Render Custom Focus Card
   if (data.custom_focus_analysis && typeof data.custom_focus_analysis === "string" && data.custom_focus_analysis.trim() !== "") {
     customFocusText.textContent = data.custom_focus_analysis;
     customFocusCard.classList.remove("hidden");
   } else {
     customFocusCard.classList.add("hidden");
+  }
+
+  // Render Version Issue Warning Alert Card
+  if (data.version_issue_warning && typeof data.version_issue_warning === "string" && data.version_issue_warning.trim() !== "") {
+    versionWarningText.textContent = data.version_issue_warning;
+    versionWarningCard.classList.remove("hidden");
+  } else {
+    versionWarningCard.classList.add("hidden");
+  }
+
+  // Render Strategic Insights Grid (Feature Rankings & Competitor Mentions)
+  let hasInsights = false;
+
+  if (featureRankingsList) {
+    featureRankingsList.innerHTML = "";
+    if (data.feature_rankings && data.feature_rankings.length > 0) {
+      hasInsights = true;
+      data.feature_rankings.forEach(item => {
+        const li = document.createElement("li");
+        li.className = "ranking-item";
+        li.textContent = item;
+        featureRankingsList.appendChild(li);
+      });
+    } else {
+      featureRankingsList.innerHTML = `<li class="ranking-item empty">${currentLang === "en" ? "No feature ranking detected." : "Özellik sıralaması bulunamadı."}</li>`;
+    }
+  }
+
+  if (competitorsList) {
+    competitorsList.innerHTML = "";
+    if (data.competitor_mentions && data.competitor_mentions.length > 0) {
+      hasInsights = true;
+      data.competitor_mentions.forEach(comp => {
+        const div = document.createElement("div");
+        div.className = "competitor-pill";
+        const ctx = comp.context ? ` — ${comp.context}` : "";
+        const mentionsStr = currentLang === "en" ? `${comp.mention_count} mentions` : `${comp.mention_count} bahsetme`;
+        div.textContent = `${comp.competitor_name} (${mentionsStr})${ctx}`;
+        competitorsList.appendChild(div);
+      });
+    } else {
+      competitorsList.innerHTML = `<div class="competitor-pill empty">${currentLang === "en" ? "No competitor mention detected." : "Rakip uygulamadan bahsedilmedi."}</div>`;
+    }
+  }
+
+  if (insightsGrid) {
+    if (hasInsights) {
+      insightsGrid.classList.remove("hidden");
+    } else {
+      insightsGrid.classList.add("hidden");
+    }
   }
 
   // Render Countries
