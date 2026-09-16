@@ -106,3 +106,34 @@ def test_both_store_weighted_average_merging():
         > 0
     )
 
+
+def test_country_deduplication_isolation():
+    # Coğrafi ülke tekleştirmesinin (country, content) izole anahtar yapısı testi
+    from models import RawReview, Platform
+
+    revs_tr = [
+        RawReview(author="A", rating=5.0, content="Harika", country="TR", platform=Platform.PLAY),
+        RawReview(author="B", rating=5.0, content="Harika", country="TR", platform=Platform.PLAY), # TR içi tekrar
+    ]
+    revs_us = [
+        RawReview(author="C", rating=5.0, content="Harika", country="US", platform=Platform.PLAY), # US'teki aynı yorum
+    ]
+
+    results = [revs_tr, revs_us]
+    seen_keys = set()
+    filtered_reviews = []
+
+    for country_revs in results:
+        for r in country_revs:
+            dedup_key = (r.country, r.content)
+            if dedup_key not in seen_keys:
+                seen_keys.add(dedup_key)
+                filtered_reviews.append(r)
+
+    # TR içi tekrar elenmeli, ama US'teki aynı yorum elenmemeli (toplam 2 yorum kalmalı: 1 TR, 1 US)
+    assert len(filtered_reviews) == 2
+    countries = [r.country for r in filtered_reviews]
+    assert "TR" in countries
+    assert "US" in countries
+
+

@@ -189,12 +189,13 @@ async def scrape_play_store_async(url: str, max_reviews: int = 0) -> tuple[AppMe
     results = await asyncio.gather(*tasks)
 
     all_reviews: list[RawReview] = []
-    seen_contents: set[str] = set()
+    seen_keys: set[tuple[str, str]] = set()
 
     for country_revs in results:
         for r in country_revs:
-            if r.content not in seen_contents:
-                seen_contents.add(r.content)
+            dedup_key = (r.country, r.content)
+            if dedup_key not in seen_keys:
+                seen_keys.add(dedup_key)
                 all_reviews.append(r)
 
     if max_reviews > 0:
@@ -214,7 +215,7 @@ async def scrape_app_store_async(url: str, max_reviews: int = 0) -> tuple[AppMet
     logger.info(f"Parallel Async App Store scraping başlatıldı: {app_name_slug} id={app_id}")
 
     all_reviews: list[RawReview] = []
-    seen_contents: set[str] = set()
+    seen_keys: set[tuple[str, str]] = set()
 
     async with httpx.AsyncClient(timeout=10, headers=get_random_headers()) as client:
         async def fetch_rss(c_info, page):
@@ -255,8 +256,9 @@ async def scrape_app_store_async(url: str, max_reviews: int = 0) -> tuple[AppMet
         results = await asyncio.gather(*tasks)
         for page_revs in results:
             for r in page_revs:
-                if r.content not in seen_contents:
-                    seen_contents.add(r.content)
+                dedup_key = (r.country, r.content)
+                if dedup_key not in seen_keys:
+                    seen_keys.add(dedup_key)
                     all_reviews.append(r)
 
     # App Store URL slug başlığının unquote edilerek düzeltilmesi
