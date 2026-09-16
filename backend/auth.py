@@ -16,7 +16,13 @@ from sqlalchemy.orm import Session
 from database import get_db, UserDB
 from models import UserResponse
 
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "revixa_super_secret_jwt_key_2026_change_in_production")
+DEFAULT_SECRET = "revixa_super_secret_jwt_key_2026_change_in_production"
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", DEFAULT_SECRET)
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
+
+if ENVIRONMENT == "production" and (not os.getenv("JWT_SECRET_KEY") or SECRET_KEY == DEFAULT_SECRET):
+    raise ValueError("Üretim (production) modunda JWT_SECRET_KEY çevre değişkeninin tanımlanması zorunludur!")
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 Gün geçerli token
 
