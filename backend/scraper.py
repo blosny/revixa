@@ -346,10 +346,35 @@ async def scrape_reviews_async(
         detected_platform = Platform.BOTH
         m1, r1, revs1 = await scrape_play_store_async(target_play_url, max_reviews // 2 if max_reviews else 0)
         m2, r2, revs2 = await scrape_app_store_async(target_appstore_url, max_reviews // 2 if max_reviews else 0)
-        meta = m1
-        meta.title = f"{m1.title} (Play Store + App Store)"
+
+        total_ratings = m1.total_ratings + m2.total_ratings
+        if total_ratings > 0:
+            weighted_avg = round(
+                ((m1.average_rating * m1.total_ratings) + (m2.average_rating * m2.total_ratings)) / total_ratings,
+                1,
+            )
+        else:
+            weighted_avg = round((m1.average_rating + m2.average_rating) / 2, 1)
+
+        meta = AppMetadata(
+            title=f"{m1.title} (Play Store + App Store)",
+            developer=f"{m1.developer} / {m2.developer}",
+            category=f"{m1.category} & {m2.category}",
+            average_rating=weighted_avg,
+            total_ratings=total_ratings,
+            version=m1.version or m2.version,
+            price=m1.price or m2.price,
+        )
+
+        rating_dist = RatingDistribution(
+            star_1=r1.star_1 + r2.star_1,
+            star_2=r1.star_2 + r2.star_2,
+            star_3=r1.star_3 + r2.star_3,
+            star_4=r1.star_4 + r2.star_4,
+            star_5=r1.star_5 + r2.star_5,
+        )
+
         all_reviews = revs1 + revs2
-        rating_dist = r1
     elif target_play_url:
         detected_platform = Platform.PLAY
         meta, rating_dist, all_reviews = await scrape_play_store_async(target_play_url, max_reviews)

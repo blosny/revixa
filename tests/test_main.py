@@ -79,3 +79,30 @@ def test_app_store_title_unquoting_and_real_ratings():
     assert "Foto%C4%9Fraf" not in meta.title
     assert "Fotoğraf" in meta.title or "Foto" in meta.title
     assert meta.average_rating >= 0.0
+
+
+def test_both_store_weighted_average_merging():
+    # Çift mağaza (Play Store + App Store) metrik harmanlama birim testi
+    import asyncio
+    from scraper import scrape_reviews_async
+
+    play_url = "https://play.google.com/store/apps/details?id=com.whatsapp"
+    appstore_url = "https://apps.apple.com/tr/app/whatsapp-messenger/id310633997"
+
+    meta, platform, rating_dist, country_dist, avg_len, keywords, reviews = asyncio.run(
+        scrape_reviews_async(play_url=play_url, appstore_url=appstore_url, max_reviews=10)
+    )
+
+    assert platform == "both"
+    assert "(Play Store + App Store)" in meta.title
+    assert meta.total_ratings > 0
+    assert meta.average_rating > 0.0
+    assert (
+        rating_dist.star_1
+        + rating_dist.star_2
+        + rating_dist.star_3
+        + rating_dist.star_4
+        + rating_dist.star_5
+        > 0
+    )
+
