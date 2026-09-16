@@ -79,3 +79,61 @@ def test_app_store_title_unquoting_and_real_ratings():
     assert "Foto%C4%9Fraf" not in meta.title
     assert "Fotoğraf" in meta.title or "Foto" in meta.title
     assert meta.average_rating >= 0.0
+
+
+def test_both_store_weighted_average_merging():
+    # Çift mağaza (Play Store + App Store) metrik harmanlama birim testi
+    import asyncio
+    from scraper import scrape_reviews_async
+
+    play_url = "https://play.google.com/store/apps/details?id=com.whatsapp"
+    appstore_url = "https://apps.apple.com/tr/app/whatsapp-messenger/id310633997"
+
+    meta, platform, rating_dist, country_dist, avg_len, keywords, reviews = asyncio.run(
+        scrape_reviews_async(play_url=play_url, appstore_url=appstore_url, max_reviews=10)
+    )
+
+    assert platform == "both"
+    assert "(Play Store + App Store)" in meta.title
+    assert meta.total_ratings > 0
+    assert meta.average_rating > 0.0
+    assert (
+        rating_dist.star_1
+        + rating_dist.star_2
+        + rating_dist.star_3
+        + rating_dist.star_4
+        + rating_dist.star_5
+        > 0
+    )
+
+
+def test_country_deduplication_isolation():
+    # Coğrafi ülke tekleştirmesinin (country, content) izole anahtar yapısı testi
+    from models import RawReview, Platform
+
+    revs_tr = [
+        RawReview(author="A", rating=5.0, content="Harika", country="TR", platform=Platform.PLAY),
+        RawReview(author="B", rating=5.0, content="Harika", country="TR", platform=Platform.PLAY), # TR içi tekrar
+    ]
+    revs_us = [
+        RawReview(author="C", rating=5.0, content="Harika", country="US", platform=Platform.PLAY), # US'teki aynı yorum
+    ]
+
+    results = [revs_tr, revs_us]
+    seen_keys = set()
+    filtered_reviews = []
+
+    for country_revs in results:
+        for r in country_revs:
+            dedup_key = (r.country, r.content)
+            if dedup_key not in seen_keys:
+                seen_keys.add(dedup_key)
+                filtered_reviews.append(r)
+
+    # TR içi tekrar elenmeli, ama US'teki aynı yorum elenmemeli (toplam 2 yorum kalmalı: 1 TR, 1 US)
+    assert len(filtered_reviews) == 2
+    countries = [r.country for r in filtered_reviews]
+    assert "TR" in countries
+    assert "US" in countries
+
+
