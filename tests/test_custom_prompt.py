@@ -27,11 +27,8 @@ def setup_db():
 def test_custom_prompt_extension_passed_to_router():
     custom_instruction = "Sadece abonelik iptali ve fiyat artisi sikayetlerine odaklan."
 
-    from analyzer import get_router
-    router = get_router()
-
     with patch('main.get_cached_analysis', return_value=None), \
-         patch.object(router, 'analyze') as mock_analyze:
+         patch('services.ai_service.AIService.analyze') as mock_analyze:
         
         mock_analyze.return_value = AnalysisResult(
             app_name="Test App",

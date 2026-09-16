@@ -132,7 +132,7 @@ class AnalysisResult(BaseModel):
 class AIStatus(BaseModel):
     gemini_available: bool
     ollama_available: bool
-    ollama_model: str
+    ollama_model: str = "llama3.2"
     active_provider: AIProvider
 
 
