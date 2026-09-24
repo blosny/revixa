@@ -52,11 +52,24 @@
       <section class="input-section">
         <div class="input-card">
           
-          <div class="dual-input-grid">
-            <div class="input-field-group">
-              <label class="input-label" for="play-url-input" data-i18n="play_label">
-                GOOGLE PLAY STORE BAĞLANTISI
-              </label>
+          <!-- Store Mode Selector Bar -->
+          <div class="store-mode-bar">
+            <div class="store-mode-tabs">
+              <button type="button" class="store-mode-btn active" data-mode="both">ÇİFT MAĞAZA (HER İKİSİ)</button>
+              <button type="button" class="store-mode-btn" data-mode="play">SADECE GOOGLE PLAY</button>
+              <button type="button" class="store-mode-btn" data-mode="appstore">SADECE APP STORE</button>
+            </div>
+            <button type="button" id="clear-all-inputs-btn" class="clear-all-btn" title="Tüm URL kutularını temizle">TÜMÜNÜ TEMİZLE ✕</button>
+          </div>
+
+          <div class="dual-input-grid" id="dual-input-grid">
+            <div class="input-field-group" id="play-group">
+              <div class="input-header-row">
+                <label class="input-label" for="play-url-input" data-i18n="play_label">
+                  GOOGLE PLAY STORE BAĞLANTISI
+                </label>
+                <button type="button" class="field-clear-btn" id="clear-play-btn" title="Google Play kutusunu temizle">✕ SİL</button>
+              </div>
               <input
                 type="url"
                 id="play-url-input"
@@ -67,12 +80,15 @@
               />
             </div>
 
-            <div class="input-divider"></div>
+            <div class="input-divider" id="input-divider"></div>
 
-            <div class="input-field-group">
-              <label class="input-label" for="appstore-url-input" data-i18n="appstore_label">
-                APPLE APP STORE BAĞLANTISI
-              </label>
+            <div class="input-field-group" id="appstore-group">
+              <div class="input-header-row">
+                <label class="input-label" for="appstore-url-input" data-i18n="appstore_label">
+                  APPLE APP STORE BAĞLANTISI
+                </label>
+                <button type="button" class="field-clear-btn" id="clear-appstore-btn" title="App Store kutusunu temizle">✕ SİL</button>
+              </div>
               <input
                 type="url"
                 id="appstore-url-input"
@@ -82,6 +98,11 @@
                 spellcheck="false"
               />
             </div>
+          </div>
+
+          <!-- Dual Store Notice -->
+          <div id="dual-store-notice" class="dual-store-notice" style="display: none;">
+            <span>⚡ <strong>Çift Mağaza Analizi:</strong> Her iki mağaza verisi çekilip ağırlıklı ortalamayla tek raporda birleştirilecektir. Tek mağaza için yukarıdaki butonlardan seçim yapabilir veya ilgili kutuyu temizleyebilirsiniz.</span>
           </div>
 
           <!-- Custom Prompt Extension Input -->
@@ -169,6 +190,7 @@
           <div>
             <div id="result-app-name" class="app-name">—</div>
             <div id="result-meta" class="app-meta">—</div>
+            <div id="result-url-badges" class="result-url-badges"></div>
           </div>
           <div class="app-info-right">
             <button id="save-app-btn" class="save-app-btn hidden" title="Bu uygulamayı hesabınıza kaydeder" data-i18n="save_panel">

@@ -3,7 +3,7 @@
  * Auth, Custom Prompt Extension, Saved Apps Dashboard & Multilingual (TR/EN) Integration.
  */
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = window.location.origin.startsWith("http") ? window.location.origin : "http://localhost:8000";
 
 // DOM References (MUST BE DECLARED FIRST)
 const playUrlInput      = document.getElementById("play-url-input");
@@ -261,6 +261,80 @@ function setupSegmentGroup(groupEl, callback) {
   });
 }
 
+// Store Mode State & DOM
+let activeStoreMode = "both"; // 'both', 'play', 'appstore'
+const storeModeBtns     = document.querySelectorAll(".store-mode-btn");
+const playGroup         = document.getElementById("play-group");
+const appstoreGroup     = document.getElementById("appstore-group");
+const dualStoreNotice   = document.getElementById("dual-store-notice");
+const clearPlayBtn      = document.getElementById("clear-play-btn");
+const clearAppstoreBtn  = document.getElementById("clear-appstore-btn");
+const clearAllInputsBtn = document.getElementById("clear-all-inputs-btn");
+
+function updateStoreModeUI() {
+  storeModeBtns.forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-mode") === activeStoreMode);
+  });
+
+  if (activeStoreMode === "play") {
+    if (playGroup) playGroup.classList.remove("dimmed");
+    if (appstoreGroup) appstoreGroup.classList.add("dimmed");
+    if (dualStoreNotice) dualStoreNotice.style.display = "none";
+  } else if (activeStoreMode === "appstore") {
+    if (playGroup) playGroup.classList.add("dimmed");
+    if (appstoreGroup) appstoreGroup.classList.remove("dimmed");
+    if (dualStoreNotice) dualStoreNotice.style.display = "none";
+  } else {
+    if (playGroup) playGroup.classList.remove("dimmed");
+    if (appstoreGroup) appstoreGroup.classList.remove("dimmed");
+    checkDualStoreNotice();
+  }
+}
+
+function checkDualStoreNotice() {
+  if (activeStoreMode === "both" && playUrlInput.value.trim() && appstoreUrlInput.value.trim()) {
+    if (dualStoreNotice) dualStoreNotice.style.display = "block";
+  } else {
+    if (dualStoreNotice) dualStoreNotice.style.display = "none";
+  }
+}
+
+storeModeBtns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    activeStoreMode = btn.getAttribute("data-mode");
+    updateStoreModeUI();
+  });
+});
+
+if (clearPlayBtn) {
+  clearPlayBtn.addEventListener("click", () => {
+    playUrlInput.value = "";
+    checkDualStoreNotice();
+    playUrlInput.focus();
+  });
+}
+
+if (clearAppstoreBtn) {
+  clearAppstoreBtn.addEventListener("click", () => {
+    appstoreUrlInput.value = "";
+    checkDualStoreNotice();
+    appstoreUrlInput.focus();
+  });
+}
+
+if (clearAllInputsBtn) {
+  clearAllInputsBtn.addEventListener("click", () => {
+    playUrlInput.value = "";
+    appstoreUrlInput.value = "";
+    if (customPromptInput) customPromptInput.value = "";
+    checkDualStoreNotice();
+    showToast("TÜM URL KUTULARI TEMİZLENDİ");
+  });
+}
+
+if (playUrlInput) playUrlInput.addEventListener("input", checkDualStoreNotice);
+if (appstoreUrlInput) appstoreUrlInput.addEventListener("input", checkDualStoreNotice);
+
 // Event Listeners
 analyzeBtn.addEventListener("click", startAnalysis);
 
@@ -485,18 +559,68 @@ async function handleClearCache() {
   }
 }
 
+function sanitizeUrl(raw) {
+  if (!raw) return "";
+  let s = raw.trim();
+  if (s.startsWith(":tps://")) s = "ht" + s;
+  else if (s.startsWith("ttps://")) s = "h" + s;
+  else if (s.startsWith("tps://")) s = "h" + s;
+  return s;
+}
+
 async function startAnalysis() {
-  const playUrl = playUrlInput.value.trim();
-  const appstoreUrl = appstoreUrlInput.value.trim();
+  let playUrl = sanitizeUrl(playUrlInput.value);
+  let appstoreUrl = sanitizeUrl(appstoreUrlInput.value);
   const customPrompt = customPromptInput ? customPromptInput.value.trim() : "";
+
+  // If user selected a single-store tab, enforce that store only
+  if (activeStoreMode === "play") {
+    appstoreUrl = "";
+  } else if (activeStoreMode === "appstore") {
+    playUrl = "";
+  }
+
+  // Auto-swap if accidentally pasted in the opposite box (only in dual/auto mode)
+  if (activeStoreMode === "both") {
+    if (playUrl && playUrl.includes("apps.apple.com") && !appstoreUrl) {
+      appstoreUrl = playUrl;
+      playUrl = "";
+      playUrlInput.value = "";
+      appstoreUrlInput.value = appstoreUrl;
+      showToast("Apple App Store bağlantısı ilgili kutuya taşındı.");
+    } else if (appstoreUrl && appstoreUrl.includes("play.google.com") && !playUrl) {
+      playUrl = appstoreUrl;
+      appstoreUrl = "";
+      appstoreUrlInput.value = "";
+      playUrlInput.value = playUrl;
+      showToast("Google Play bağlantısı ilgili kutuya taşındı.");
+    }
+  }
+
+  // Update input fields to show sanitized values
+  if (playUrl && playUrlInput.value !== playUrl) playUrlInput.value = playUrl;
+  if (appstoreUrl && appstoreUrlInput.value !== appstoreUrl) appstoreUrlInput.value = appstoreUrl;
 
   if (!playUrl && !appstoreUrl) {
     showToast(currentLang === "en" ? "PLEASE ENTER AT LEAST ONE STORE URL" : "LÜTFEN EN AZ BİR MAĞAZA URL'Sİ GİRİN");
     return;
   }
 
+  // Cross-store validation check
+  if (appstoreUrl && appstoreUrl.includes("play.google.com")) {
+    showError("GEÇERSİZ MAĞAZA BAĞLANTISI", "Apple App Store alanına 'play.google.com' bağlantısı girdiniz. Lütfen geçerli bir Apple App Store (apps.apple.com) bağlantısı girin veya Google Play alanını kullanın.");
+    return;
+  }
+  if (playUrl && playUrl.includes("apps.apple.com")) {
+    showError("GEÇERSİZ MAĞAZA BAĞLANTISI", "Google Play Store alanına 'apps.apple.com' bağlantısı girdiniz. Lütfen geçerli bir Google Play (play.google.com) bağlantısı girin.");
+    return;
+  }
+
   resetUI();
   showLoading();
+
+  const analyzedPlayUrl = playUrl;
+  const analyzedAppStoreUrl = appstoreUrl;
 
   const payload = {
     play_url: playUrl || null,
@@ -525,12 +649,18 @@ async function startAnalysis() {
 
     currentReport = data;
     finishLoading(() => {
-      renderResults(data);
+      // Clear inputs for clean next query
+      playUrlInput.value = "";
+      appstoreUrlInput.value = "";
+      if (customPromptInput) customPromptInput.value = "";
+      if (typeof checkDualStoreNotice === "function") checkDualStoreNotice();
+
+      renderResults(data, analyzedPlayUrl, analyzedAppStoreUrl);
     });
 
   } catch (err) {
     hideLoading();
-    showError("SUNUCU BAĞLANTI HATASI", "Backend sunucusuna ulaşılamıyor (http://localhost:8000). Sunucunun çalıştığından emin olun.");
+    showError("SUNUCU BAĞLANTI HATASI", "Backend sunucusuna ulaşılamıyor (" + API_BASE + "). Sunucunun çalıştığından emin olun.");
   }
 }
 
@@ -597,10 +727,11 @@ function hideLoading() {
 }
 
 function updateAsciiBar(percent) {
-  const totalBlocks = 40;
-  const filledBlocks = Math.round((percent / 100) * totalBlocks);
-  const emptyBlocks = totalBlocks - filledBlocks;
-  asciiBar.textContent = `[ ${"█".repeat(filledBlocks)}${"░".repeat(emptyBlocks)} ]`;
+  const totalSlots = 38;
+  const filledSlots = Math.round((percent / 100) * totalSlots);
+  const emptySlots = totalSlots - filledSlots;
+  const barStr = "█".repeat(filledSlots) + "░".repeat(emptySlots);
+  asciiBar.textContent = `[ ${barStr} ]`;
 }
 
 function showError(title, detail) {
@@ -617,11 +748,37 @@ function showToast(msg) {
   }, 3000);
 }
 
-function renderResults(data) {
+function renderResults(data, playUrl = "", appstoreUrl = "") {
   resultAppName.textContent = data.app_name.toUpperCase();
   resultMeta.textContent = currentLang === "en" 
     ? `${data.metadata.total_ratings.toLocaleString()} Ratings • ${data.total_reviews} Analyzed Reviews • Platform: ${data.platform.toUpperCase()}`
     : `${data.metadata.total_ratings.toLocaleString()} Mağaza Oylaması • ${data.total_reviews} İnceleme • Platform: ${data.platform.toUpperCase()}`;
+
+  // Render analyzed Store URL Badges
+  const urlBadgesContainer = document.getElementById("result-url-badges");
+  if (urlBadgesContainer) {
+    urlBadgesContainer.innerHTML = "";
+    if (playUrl) {
+      const a = document.createElement("a");
+      a.href = playUrl;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.className = "store-url-badge play";
+      a.title = "Google Play Store sayfasını aç";
+      a.innerHTML = `<span>▶ Google Play</span> <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`;
+      urlBadgesContainer.appendChild(a);
+    }
+    if (appstoreUrl) {
+      const a = document.createElement("a");
+      a.href = appstoreUrl;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.className = "store-url-badge appstore";
+      a.title = "Apple App Store sayfasını aç";
+      a.innerHTML = `<span> App Store</span> <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`;
+      urlBadgesContainer.appendChild(a);
+    }
+  }
 
   aiBadge.textContent = data.ai_provider.toUpperCase();
 

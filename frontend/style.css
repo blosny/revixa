@@ -171,6 +171,107 @@ body {
   padding: 24px;
 }
 
+/* ─── Store Mode Selector Bar ─── */
+.store-mode-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-light);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.store-mode-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.store-mode-btn {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 7px 14px;
+  background: #111113;
+  border: 1px solid var(--border-light);
+  color: var(--text-muted);
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+}
+
+.store-mode-btn:hover {
+  color: #ffffff;
+  border-color: #555555;
+}
+
+.store-mode-btn.active {
+  background: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
+}
+
+.clear-all-btn {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px dashed #444444;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clear-all-btn:hover {
+  border-color: #ff4d4d;
+  color: #ff4d4d;
+  background: rgba(255, 77, 77, 0.08);
+}
+
+.input-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.field-clear-btn {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 6px;
+  transition: color 0.15s ease;
+}
+
+.field-clear-btn:hover {
+  color: #ff4d4d;
+}
+
+.dual-store-notice {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: #a1a1aa;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid #333338;
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.dual-store-notice strong {
+  color: #ffffff;
+}
+
+.input-field-group.dimmed {
+  opacity: 0.35;
+  pointer-events: none;
+  filter: grayscale(1);
+}
+
 .dual-input-grid {
   display: grid;
   grid-template-columns: 1fr 1px 1fr;
@@ -475,6 +576,43 @@ body {
   font-size: 0.8rem;
   color: var(--text-muted);
   margin-top: 4px;
+}
+
+.result-url-badges {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.store-url-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 4px 10px;
+  background: #111113;
+  border: 1px solid #333338;
+  color: #a1a1aa;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border-radius: 2px;
+}
+
+.store-url-badge:hover {
+  background: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
+}
+
+.store-url-badge svg {
+  opacity: 0.7;
+}
+
+.store-url-badge:hover svg {
+  stroke: #000000;
+  opacity: 1;
 }
 
 .app-info-right {
