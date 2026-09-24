@@ -55,15 +55,20 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+from starlette.staticfiles import StaticFiles
+
 cors_origins_raw = os.getenv(
     "CORS_ORIGINS",
-    "http://localhost:3000,http://127.0.0.1:8000,http://localhost:8000,http://127.0.0.1:5500,http://localhost:5500",
+    "http://localhost:3000,http://127.0.0.1:8000,http://localhost:8000,http://127.0.0.1:5500,http://localhost:5500,null",
 )
 cors_origins = [origin.strip() for origin in cors_origins_raw.split(",") if origin.strip()]
+if "null" not in cors_origins:
+    cors_origins.append("null")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
+    allow_origin_regex=r".*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -336,6 +341,15 @@ async def analyze_app(request: Request, body: AnalysisRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Yorumlar analiz edilirken hata oluştu: {str(e)}"
         )
+
+
+
+# ─────────────────────────────────────────────
+#  Frontend Static Files Mount
+# ─────────────────────────────────────────────
+frontend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend")
+if os.path.exists(frontend_dir):
+    app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
 
 
 if __name__ == "__main__":

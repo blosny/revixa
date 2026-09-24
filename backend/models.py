@@ -113,8 +113,9 @@ class AnalysisResult(BaseModel):
     
     # Zenginleştirilmiş Pazar İçgörüleri
     churn_risk_score: float = 0.0
-    version_issue_warning: str = ""
-    custom_focus_analysis: str = ""        # Özel Odak İnceleme Yanıtı
+    version_issue_warning: Optional[str] = ""
+    custom_focus_analysis: Optional[str] = ""        # Özel Odak İnceleme Yanıtı
+    custom_prompt_extension: Optional[str] = None
     competitor_mentions: list[CompetitorMention] = Field(default_factory=list)
     feature_rankings: list[str] = Field(default_factory=list)
     

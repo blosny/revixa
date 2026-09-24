@@ -130,7 +130,7 @@ class GeminiAnalyzer:
             response_mime_type="application/json",
         )
 
-        models_to_try = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+        models_to_try = ["gemini-flash-latest", "gemini-3-flash-preview", "gemini-2.5-flash"]
         last_error = None
 
         for model_name in models_to_try:
@@ -393,9 +393,9 @@ class AIService:
             total_reviews=len(reviews),
             avg_review_length=avg_review_length,
             summary=str(data.get("summary", "Özet bulunamadı.")),
-            custom_focus_analysis=str(data.get("custom_focus_analysis", "")) if data.get("custom_focus_analysis") else None,
+            custom_focus_analysis=str(data.get("custom_focus_analysis", "")) if data.get("custom_focus_analysis") else "",
             churn_risk_score=round(churn_risk, 1),
-            version_issue_warning=str(data.get("version_issue_warning", "")) if data.get("version_issue_warning") else None,
+            version_issue_warning=str(data.get("version_issue_warning", "")) if data.get("version_issue_warning") else "",
             competitor_mentions=parse_competitors(),
             feature_rankings=parse_rankings(),
             liked=parse_items("liked"),
