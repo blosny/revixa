@@ -316,6 +316,7 @@ class AIService:
             "summary": f"{meta.title} uygulaması için toplam {len(reviews)} adet inceleme analiz edildi. Kullanıcıların %{senti_dist.positive_pct}'i olumlu geri bildirimde bulunurken, %{senti_dist.negative_pct}'i çeşitli şikayetler iletti.",
             "custom_focus_analysis": focus_text,
             "churn_risk_score": float(senti_dist.negative_pct),
+            "satisfaction_score": round(float(senti_dist.positive_pct + (senti_dist.neutral_pct * 0.5)), 1),
             "version_issue_warning": "Son sürümlerde kullanıcı şikayetleri bulunmaktadır." if senti_dist.negative_pct > 30 else "",
             "competitor_mentions": [],
             "feature_rankings": ["Performans ve Hız İyileştirmeleri", "Kullanıcı Arayüzü Güncellemesi", "Hata Düzeltmeleri"],
@@ -381,6 +382,8 @@ class AIService:
 
         ai_churn = data.get("churn_risk_score")
         churn_risk = float(ai_churn if ai_churn is not None else senti_dist.negative_pct)
+        # Kullanıcı Memnuniyet / Sadakat Skoru (0-100)
+        satisfaction_score = round(float(senti_dist.positive_pct + (senti_dist.neutral_pct * 0.5)), 1)
 
         return AnalysisResult(
             app_name=meta.title,
@@ -395,6 +398,7 @@ class AIService:
             summary=str(data.get("summary", "Özet bulunamadı.")),
             custom_focus_analysis=str(data.get("custom_focus_analysis", "")) if data.get("custom_focus_analysis") else "",
             churn_risk_score=round(churn_risk, 1),
+            satisfaction_score=satisfaction_score,
             version_issue_warning=str(data.get("version_issue_warning", "")) if data.get("version_issue_warning") else "",
             competitor_mentions=parse_competitors(),
             feature_rankings=parse_rankings(),

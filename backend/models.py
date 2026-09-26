@@ -113,6 +113,7 @@ class AnalysisResult(BaseModel):
     
     # Zenginleştirilmiş Pazar İçgörüleri
     churn_risk_score: float = 0.0
+    satisfaction_score: float = 0.0                  # Kullanıcı Memnuniyet / Sadakat Skoru (0-100)
     version_issue_warning: Optional[str] = ""
     custom_focus_analysis: Optional[str] = ""        # Özel Odak İnceleme Yanıtı
     custom_prompt_extension: Optional[str] = None

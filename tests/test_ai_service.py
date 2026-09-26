@@ -46,6 +46,7 @@ def test_ai_service_rule_based_fallback():
     assert "Örnek Oyun App" in raw_fallback["summary"]
     assert "Donma şikayetlerini incele" in raw_fallback["custom_focus_analysis"]
     assert raw_fallback["churn_risk_score"] == 50.0
+    assert raw_fallback["satisfaction_score"] == 50.0
     assert len(raw_fallback["liked"]) > 0
     assert len(raw_fallback["bad"]) > 0
 
