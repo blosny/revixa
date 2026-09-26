@@ -228,9 +228,9 @@
             </div>
 
             <div class="metric-card">
-              <div class="metric-title" data-i18n="churn_risk">CHURN RİSKİ</div>
-              <div id="metric-churn-score" class="metric-value">—</div>
-              <div id="metric-churn-sub" class="metric-sub" data-i18n="churn_sub">Müşteri Kaybetme Riski</div>
+              <div class="metric-title" data-i18n="satisfaction_score">MEMNUNİYET SKORU</div>
+              <div id="metric-satisfaction-score" class="metric-value">—</div>
+              <div id="metric-satisfaction-sub" class="metric-sub" data-i18n="satisfaction_sub">Kullanıcı Memnuniyeti & Sadakat</div>
             </div>
 
             <div class="metric-card">
@@ -254,27 +254,38 @@
             <div id="keywords-list-bar" class="keywords-list-bar"></div>
           </div>
 
-          <!-- Visual Analytics & Star Distribution Histogram Card -->
+          <!-- Visual Analytics & Charts Card (Dual Donut Charts + Histogram) -->
           <div id="visual-analytics-card" class="summary-card visual-analytics-card">
-            <div class="summary-title" data-i18n="visual_analytics_title">[📊] GÖRSEL ANALİTİK VE YILDIZ DAĞILIMI HİSTOGRAMI</div>
+            <div class="summary-title" data-i18n="visual_analytics_title">[📊] GÖRSEL ANALİTİK, PASTA GRAFİKLERİ VE YILDIZ HİSTOGRAMI</div>
             <div class="visual-analytics-grid">
               
               <!-- Star Distribution Histogram -->
-              <div class="histogram-box">
+              <div class="analytics-box histogram-box">
                 <div class="histogram-subtitle" data-i18n="star_hist_subtitle">MAĞAZA YILDIZ DAĞILIMI (5★ ➔ 1★)</div>
                 <div id="star-histogram-bars" class="star-histogram-bars">
                   <!-- Generated via JS -->
                 </div>
               </div>
 
-              <!-- Sentiment Visual Donut & Stacked Bar -->
-              <div class="sentiment-visual-box">
-                <div class="histogram-subtitle" data-i18n="sentiment_visual_subtitle">DUYGU ORANLARI VE KULLANICI ALGISI</div>
-                <div id="sentiment-svg-container" class="sentiment-svg-container">
-                  <!-- SVG Chart generated via JS -->
+              <!-- Sentiment Visual Donut Chart -->
+              <div class="analytics-box sentiment-visual-box">
+                <div class="histogram-subtitle" data-i18n="sentiment_visual_subtitle">DUYGU DAĞILIMI PASTA GRAFİĞİ</div>
+                <div id="sentiment-svg-container" class="donut-chart-container">
+                  <!-- SVG Donut Chart generated via JS -->
                 </div>
                 <div id="sentiment-legend-bars" class="sentiment-legend-bars">
                   <!-- Legend bars generated via JS -->
+                </div>
+              </div>
+
+              <!-- Country Distribution Donut Chart -->
+              <div class="analytics-box country-visual-box">
+                <div class="histogram-subtitle" data-i18n="country_visual_subtitle">COĞRAFİ PAZAR PAYI GRAFİĞİ</div>
+                <div id="country-svg-container" class="donut-chart-container">
+                  <!-- SVG Country Donut Chart generated via JS -->
+                </div>
+                <div id="country-legend-bars" class="sentiment-legend-bars">
+                  <!-- Country Legend generated via JS -->
                 </div>
               </div>
 

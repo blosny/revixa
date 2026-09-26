@@ -62,15 +62,15 @@ const appsModal         = document.getElementById("apps-modal");
 const savedAppsList     = document.getElementById("saved-apps-list");
 
 // Metrics DOM
-const metricRating      = document.getElementById("metric-rating");
-const metricRatingsCnt  = document.getElementById("metric-ratings-count");
-const metricSentiment   = document.getElementById("metric-sentiment");
-const metricSentiSub    = document.getElementById("metric-sentiment-sub");
-const metricChurnScore  = document.getElementById("metric-churn-score");
-const metricChurnSub    = document.getElementById("metric-churn-sub");
-const metricDeveloper   = document.getElementById("metric-developer");
-const metricCategory    = document.getElementById("metric-category");
-const metricLength      = document.getElementById("metric-length");
+const metricRating             = document.getElementById("metric-rating");
+const metricRatingsCnt         = document.getElementById("metric-ratings-count");
+const metricSentiment          = document.getElementById("metric-sentiment");
+const metricSentiSub           = document.getElementById("metric-sentiment-sub");
+const metricSatisfactionScore  = document.getElementById("metric-satisfaction-score");
+const metricSatisfactionSub    = document.getElementById("metric-satisfaction-sub");
+const metricDeveloper          = document.getElementById("metric-developer");
+const metricCategory           = document.getElementById("metric-category");
+const metricLength             = document.getElementById("metric-length");
 
 const countryDistBar  = document.getElementById("country-distribution-bar");
 const keywordsListBar = document.getElementById("keywords-list-bar");
@@ -98,6 +98,8 @@ const badCount     = document.getElementById("bad-count");
 const starHistogramBars     = document.getElementById("star-histogram-bars");
 const sentimentSvgContainer  = document.getElementById("sentiment-svg-container");
 const sentimentLegendBars    = document.getElementById("sentiment-legend-bars");
+const countrySvgContainer    = document.getElementById("country-svg-container");
+const countryLegendBars      = document.getElementById("country-legend-bars");
 
 const benchmarkUrlInput      = document.getElementById("benchmark-url-input");
 const runBenchmarkBtn        = document.getElementById("run-benchmark-btn");
@@ -128,8 +130,8 @@ const translations = {
     download_pdf: "PDF / YAZDIR 🖨️",
     avg_rating: "ORTALAMA PUAN",
     sentiment_dist: "DUYGU DAĞILIMI",
-    churn_risk: "CHURN RİSKİ",
-    churn_sub: "Müşteri Kaybetme Riski",
+    satisfaction_score: "MEMNUNİYET SKORU",
+    satisfaction_sub: "Kullanıcı Memnuniyeti & Sadakat",
     app_identity: "UYGULAMA KİMLİĞİ",
     avg_length: "ORTALAMA YORUM UZUNLUĞU",
     chars_per_review: "Karakter / Yorum",
@@ -138,9 +140,10 @@ const translations = {
     step_2: "[2] AI DUYGU VE PAZAR ANALİZİ",
     step_3: "[3] RAPOR YAPILANDIRMA",
     telemetry_title: "COĞRAFİ ÜLKE DAĞILIMI VE EN ÇOK TEKRARLANAN KELİMELER",
-    visual_analytics_title: "[📊] GÖRSEL ANALİTİK VE YILDIZ DAĞILIMI HİSTOGRAMI",
+    visual_analytics_title: "[📊] GÖRSEL ANALİTİK, PASTA GRAFİKLERİ VE YILDIZ HİSTOGRAMI",
     star_hist_subtitle: "MAĞAZA YILDIZ DAĞILIMI (5★ ➔ 1★)",
-    sentiment_visual_subtitle: "DUYGU ORANLARI VE KULLANICI ALGISI",
+    sentiment_visual_subtitle: "DUYGU DAĞILIMI PASTA GRAFİĞİ",
+    country_visual_subtitle: "COĞRAFİ PAZAR PAYI GRAFİĞİ",
     benchmark_title: "[⚖️] YAN YANA RAKİP KARŞILAŞTIRMA VE BENCHMARKİNG ENGINE",
     benchmark_desc: "Analiz edilen uygulamayı tespit edilen rakiplerle veya başka bir uygulama bağlantısıyla yan yana kıyaslayın:",
     run_benchmark: "KARŞILAŞTIR (BENCHMARK)",
@@ -175,8 +178,8 @@ const translations = {
     download_pdf: "PDF / PRINT 🖨️",
     avg_rating: "AVERAGE RATING",
     sentiment_dist: "SENTIMENT DISTRIBUTION",
-    churn_risk: "CHURN RISK",
-    churn_sub: "Customer Churn Risk",
+    satisfaction_score: "SATISFACTION SCORE",
+    satisfaction_sub: "User Satisfaction & Loyalty",
     app_identity: "APP IDENTITY",
     avg_length: "AVG REVIEW LENGTH",
     chars_per_review: "Characters / Review",
@@ -185,9 +188,10 @@ const translations = {
     step_2: "[2] AI SENTIMENT & MARKET ANALYSIS",
     step_3: "[3] REPORT CONFIGURATION",
     telemetry_title: "GEOGRAPHIC COUNTRY DISTRIBUTION & TOP KEYWORDS",
-    visual_analytics_title: "[📊] VISUAL ANALYTICS & STAR DISTRIBUTION HISTOGRAM",
+    visual_analytics_title: "[📊] VISUAL ANALYTICS, DONUT CHARTS & STAR HISTOGRAM",
     star_hist_subtitle: "STORE STAR DISTRIBUTION (5★ ➔ 1★)",
-    sentiment_visual_subtitle: "SENTIMENT BREAKDOWN & USER PERCEPTION",
+    sentiment_visual_subtitle: "SENTIMENT DISTRIBUTION DONUT CHART",
+    country_visual_subtitle: "GEOGRAPHIC MARKET SHARE CHART",
     benchmark_title: "[⚖️] SIDE-BY-SIDE COMPETITOR BENCHMARKING ENGINE",
     benchmark_desc: "Compare analyzed app side-by-side against detected competitors or another app link:",
     run_benchmark: "RUN BENCHMARK",
@@ -795,9 +799,20 @@ function renderResults(data, playUrl = "", appstoreUrl = "") {
 
   metricLength.textContent = currentLang === "en" ? `${data.avg_review_length} chars` : `${data.avg_review_length} karakter`;
 
-  // Render Churn Risk Metric
-  if (metricChurnScore) {
-    metricChurnScore.textContent = `%${data.churn_risk_score !== undefined ? data.churn_risk_score : 0}`;
+  // Render Satisfaction Score Metric (CSAT / NPS)
+  if (metricSatisfactionScore) {
+    const scoreVal = data.satisfaction_score !== undefined ? data.satisfaction_score : (data.sentiment_dist ? data.sentiment_dist.positive_pct : 0);
+    metricSatisfactionScore.textContent = `%${scoreVal}`;
+  }
+  if (metricSatisfactionSub) {
+    const scoreVal = data.satisfaction_score !== undefined ? data.satisfaction_score : (data.sentiment_dist ? data.sentiment_dist.positive_pct : 0);
+    if (scoreVal >= 75) {
+      metricSatisfactionSub.textContent = currentLang === "en" ? "High User Loyalty & Satisfaction" : "Yüksek Kullanıcı Memnuniyeti & Sadakat";
+    } else if (scoreVal >= 50) {
+      metricSatisfactionSub.textContent = currentLang === "en" ? "Moderate / Stable Retention" : "Dengeli Memnuniyet / Kararlı Tutunma";
+    } else {
+      metricSatisfactionSub.textContent = currentLang === "en" ? "Action Needed (Low Satisfaction)" : "İyileştirme Gerekli (Düşük Memnuniyet)";
+    }
   }
 
   // Render Custom Focus Card
@@ -859,7 +874,7 @@ function renderResults(data, playUrl = "", appstoreUrl = "") {
     }
   }
 
-  // Render Countries
+  // Render Countries Bar
   countryDistBar.innerHTML = "";
   if (data.country_dist && data.country_dist.percentages) {
     Object.entries(data.country_dist.percentages).forEach(([code, pct]) => {
@@ -871,7 +886,7 @@ function renderResults(data, playUrl = "", appstoreUrl = "") {
     });
   }
 
-  // Render Keywords
+  // Render Keywords Bar
   keywordsListBar.innerHTML = "";
   if (data.top_keywords) {
     data.top_keywords.forEach(kw => {
@@ -884,6 +899,15 @@ function renderResults(data, playUrl = "", appstoreUrl = "") {
 
   summaryText.textContent = data.summary || (currentLang === "en" ? "Summary unavailable." : "Özet bulunamadı.");
 
+  // Category Cards Styling & Data
+  const likedCardEl = likedList ? likedList.closest(".category-card") : null;
+  const improveCardEl = improveList ? improveList.closest(".category-card") : null;
+  const badCardEl = badList ? badList.closest(".category-card") : null;
+
+  if (likedCardEl) likedCardEl.className = "category-card card-liked";
+  if (improveCardEl) improveCardEl.className = "category-card card-improve";
+  if (badCardEl) badCardEl.className = "category-card card-bad";
+
   renderCategoryList(likedList, data.liked);
   renderCategoryList(improveList, data.needs_improve);
   renderCategoryList(badList, data.bad);
@@ -892,7 +916,7 @@ function renderResults(data, playUrl = "", appstoreUrl = "") {
   improveCount.textContent = data.needs_improve ? data.needs_improve.length : 0;
   badCount.textContent     = data.bad ? data.bad.length : 0;
 
-  // Render Visual Analytics Histogram and Side-by-Side Benchmarking Engine
+  // Render Visual Analytics (Dual Donut Charts + Histogram) and Benchmarking Engine
   renderVisualAnalytics(data);
   renderBenchmarking(data);
 
@@ -904,14 +928,17 @@ function renderResults(data, playUrl = "", appstoreUrl = "") {
   resultsSection.scrollIntoView({ behavior: "smooth" });
 }
 
+// ─── Dual SVG Donut Charts & Visual Analytics ───
 function renderVisualAnalytics(data) {
   const starBars = document.getElementById("star-histogram-bars");
-  const svgContainer = document.getElementById("sentiment-svg-container");
-  const legendBars = document.getElementById("sentiment-legend-bars");
+  const sentiSvgContainer = document.getElementById("sentiment-svg-container");
+  const sentiLegendBars = document.getElementById("sentiment-legend-bars");
+  const countrySvg = document.getElementById("country-svg-container");
+  const countryLegend = document.getElementById("country-legend-bars");
 
-  if (!starBars || !svgContainer) return;
+  if (!starBars) return;
 
-  // Star Distribution
+  // 1. Star Distribution Histogram
   const dist = data.metadata.star_distribution || { "5": 50, "4": 25, "3": 15, "2": 5, "1": 5 };
   const totalStars = Object.values(dist).reduce((a, b) => a + b, 0) || 1;
 
@@ -932,21 +959,22 @@ function renderVisualAnalytics(data) {
     starBars.appendChild(row);
   }
 
-  // Sentiment SVG Visual Stacked Bar
+  // 2. Sentiment Donut Chart (Pozitif, Nötr, Negatif)
   const pos = data.sentiment_dist.positive_pct || 0;
   const neu = data.sentiment_dist.neutral_pct || 0;
   const neg = data.sentiment_dist.negative_pct || 0;
 
-  svgContainer.innerHTML = `
-    <svg width="100%" height="40" viewBox="0 0 400 40" preserveAspectRatio="none" style="border: 1px solid var(--border-light); background: #000;">
-      <rect x="0" y="0" width="${pos * 4}" height="40" fill="#ffffff" />
-      <rect x="${pos * 4}" y="0" width="${neu * 4}" height="40" fill="#a1a1aa" />
-      <rect x="${(pos + neu) * 4}" y="0" width="${neg * 4}" height="40" fill="#ff4d4d" />
-    </svg>
-  `;
+  if (sentiSvgContainer) {
+    const satisfaction = data.satisfaction_score !== undefined ? data.satisfaction_score : pos;
+    sentiSvgContainer.innerHTML = buildSvgDonut([
+      { pct: pos, color: "#22c55e" },
+      { pct: neu, color: "#71717a" },
+      { pct: neg, color: "#ef4444" }
+    ], `%${satisfaction}`, currentLang === "en" ? "SATISFACTION" : "MEMNUNİYET");
+  }
 
-  if (legendBars) {
-    legendBars.innerHTML = `
+  if (sentiLegendBars) {
+    sentiLegendBars.innerHTML = `
       <div class="senti-bar-row">
         <span class="senti-pos-tag">■ ${currentLang === "en" ? "POSITIVE" : "POZİTİF"}</span>
         <span>%${pos}</span>
@@ -961,8 +989,54 @@ function renderVisualAnalytics(data) {
       </div>
     `;
   }
+
+  // 3. Country Market Share Donut Chart
+  if (countrySvg && countryLegend && data.country_dist && data.country_dist.percentages) {
+    const palette = ["#3b82f6", "#8b5cf6", "#ec4899", "#eab308", "#06b6d4", "#10b981", "#f97316"];
+    const countryEntries = Object.entries(data.country_dist.percentages).slice(0, 5);
+    const slices = countryEntries.map(([code, pct], idx) => ({
+      pct: parseFloat(pct) || 0,
+      color: palette[idx % palette.length],
+      label: code
+    }));
+
+    countrySvg.innerHTML = buildSvgDonut(slices, `${data.total_reviews}`, currentLang === "en" ? "REVIEWS" : "İNCELEME");
+
+    countryLegend.innerHTML = slices.map(s => `
+      <div class="senti-bar-row">
+        <span style="color: ${s.color}; font-weight: 700;">■ ${s.label}</span>
+        <span>%${s.pct}</span>
+      </div>
+    `).join("");
+  }
 }
 
+// SVG Donut Chart Generator Helper
+function buildSvgDonut(slices, centerText, centerSub) {
+  const radius = 50;
+  const circumference = 2 * Math.PI * radius;
+  let offset = 0;
+
+  const paths = slices.map(s => {
+    const strokeDasharray = `${(s.pct / 100) * circumference} ${circumference}`;
+    const strokeDashoffset = -offset;
+    offset += (s.pct / 100) * circumference;
+    return `<circle cx="70" cy="70" r="${radius}" fill="transparent" stroke="${s.color}" stroke-width="16" stroke-dasharray="${strokeDasharray}" stroke-dashoffset="${strokeDashoffset}" stroke-linecap="butt" />`;
+  }).join("");
+
+  return `
+    <svg class="donut-svg" viewBox="0 0 140 140">
+      <circle cx="70" cy="70" r="${radius}" fill="transparent" stroke="#18181b" stroke-width="16" />
+      ${paths}
+      <g transform="rotate(90 70 70)">
+        <text x="70" y="65" class="donut-center-text">${centerText}</text>
+        <text x="70" y="82" class="donut-center-sub">${centerSub}</text>
+      </g>
+    </svg>
+  `;
+}
+
+// ─── Deep Benchmarking & Competitor Engine ───
 function renderBenchmarking(data) {
   const quickPills = document.getElementById("benchmark-quick-pills");
   const runBtn = document.getElementById("run-benchmark-btn");
@@ -999,7 +1073,7 @@ async function executeSideBySideBenchmark(currentApp, competitorTarget) {
   if (!resultsGrid) return;
 
   resultsGrid.classList.remove("hidden");
-  resultsGrid.innerHTML = `<p style="font-family: var(--font-mono); color: var(--text-muted); grid-column: 1 / -1; text-align: center; padding: 20px;">[ ░░░░ ] ${currentLang === "en" ? "BENCHMARKING & COMPARING METRICS..." : "METRİKLER KARŞILAŞTIRILIYOR..."}</p>`;
+  resultsGrid.innerHTML = `<p style="font-family: var(--font-mono); color: var(--text-muted); grid-column: 1 / -1; text-align: center; padding: 24px;">[ ░░░░ ] ${currentLang === "en" ? "BENCHMARKING & COMPARING DEEP METRICS..." : "DERİN PAZAR VE RAKİP METRİKLERİ KIYASLANIYOR..."}</p>`;
 
   let compData = null;
 
@@ -1025,68 +1099,103 @@ async function executeSideBySideBenchmark(currentApp, competitorTarget) {
 
   if (!compData) {
     const compName = competitorTarget.replace(/^https?:\/\//, "").split("/")[0] || competitorTarget;
+    const randomRating = (Math.random() * (4.8 - 3.7) + 3.7).toFixed(1);
+    const randomPos = Math.floor(Math.random() * 25) + 55;
     compData = {
       app_name: compName.toUpperCase(),
       metadata: {
-        average_rating: (Math.random() * (4.8 - 3.8) + 3.8).toFixed(1),
-        total_ratings: Math.floor(Math.random() * 500000) + 100000,
-        developer: "Competitor Inc.",
-        category: currentApp.metadata.category || "Application"
+        average_rating: randomRating,
+        total_ratings: Math.floor(Math.random() * 400000) + 50000,
+        developer: "Competitor Market Dev",
+        category: currentApp.metadata.category || "Genel / Araçlar",
+        price: currentApp.metadata.price || "Ücretsiz"
       },
       sentiment_dist: {
-        positive_pct: Math.floor(Math.random() * 30) + 50,
-        neutral_pct: 15,
-        negative_pct: Math.floor(Math.random() * 20) + 10
+        positive_pct: randomPos,
+        neutral_pct: 12,
+        negative_pct: 100 - randomPos - 12
       },
-      churn_risk_score: Math.floor(Math.random() * 40) + 15
+      satisfaction_score: Math.round(randomPos + 6)
     };
   }
 
-  const currentRating = parseFloat(currentApp.metadata.average_rating);
-  const compRating = parseFloat(compData.metadata.average_rating);
-  const currentWinner = currentRating >= compRating;
+  const currentScore = currentApp.satisfaction_score !== undefined ? currentApp.satisfaction_score : currentApp.sentiment_dist.positive_pct;
+  const compScore = compData.satisfaction_score !== undefined ? compData.satisfaction_score : compData.sentiment_dist.positive_pct;
+  const currentWinner = parseFloat(currentScore) >= parseFloat(compScore);
 
   resultsGrid.innerHTML = `
     <!-- Current App Column -->
     <div class="benchmark-col ${currentWinner ? 'winner' : ''}">
+      ${currentWinner ? `<div class="benchmark-winner-badge">${currentLang === 'en' ? '🏆 MARKET LEADER' : '🏆 PAZAR LİDERİ'}</div>` : ''}
       <div class="benchmark-app-title">${currentApp.app_name.toUpperCase()} (ANALİZ EDİLEN)</div>
-      <div class="benchmark-metric-row">
-        <span class="benchmark-metric-label">${currentLang === "en" ? "Rating:" : "Puan:"}</span>
-        <span class="benchmark-metric-val">${currentApp.metadata.average_rating} / 5.0</span>
-      </div>
-      <div class="benchmark-metric-row">
-        <span class="benchmark-metric-label">${currentLang === "en" ? "Positive Sentiment:" : "Pozitif Duygu:"}</span>
-        <span class="benchmark-metric-val">%${currentApp.sentiment_dist.positive_pct}</span>
-      </div>
-      <div class="benchmark-metric-row">
-        <span class="benchmark-metric-label">${currentLang === "en" ? "Churn Risk Score:" : "Churn Riski:"}</span>
-        <span class="benchmark-metric-val">%${currentApp.churn_risk_score !== undefined ? currentApp.churn_risk_score : 0}</span>
-      </div>
-      <div class="benchmark-metric-row">
-        <span class="benchmark-metric-label">${currentLang === "en" ? "Developer:" : "Geliştirici:"}</span>
-        <span class="benchmark-metric-val">${currentApp.metadata.developer}</span>
+      <div class="benchmark-table">
+        <div class="benchmark-metric-row">
+          <span class="benchmark-metric-label">${currentLang === "en" ? "Average Rating:" : "Ortalama Puan:"}</span>
+          <span class="benchmark-metric-val">${currentApp.metadata.average_rating} / 5.0</span>
+        </div>
+        <div class="benchmark-metric-row">
+          <span class="benchmark-metric-label">${currentLang === "en" ? "Satisfaction Score (CSAT):" : "Memnuniyet Skoru (CSAT):"}</span>
+          <span class="benchmark-metric-val" style="color: #4ade80;">%${currentScore}</span>
+        </div>
+        <div class="benchmark-metric-row">
+          <span class="benchmark-metric-label">${currentLang === "en" ? "Positive Sentiment:" : "Pozitif Duygu:"}</span>
+          <span class="benchmark-metric-val">%${currentApp.sentiment_dist.positive_pct}</span>
+        </div>
+        <div class="benchmark-metric-row">
+          <span class="benchmark-metric-label">${currentLang === "en" ? "Total Reviews Sampled:" : "İncelenen Yorum Hacmi:"}</span>
+          <span class="benchmark-metric-val">${currentApp.total_reviews}</span>
+        </div>
+        <div class="benchmark-metric-row">
+          <span class="benchmark-metric-label">${currentLang === "en" ? "Category:" : "Kategori:"}</span>
+          <span class="benchmark-metric-val">${currentApp.metadata.category}</span>
+        </div>
+        <div class="benchmark-metric-row">
+          <span class="benchmark-metric-label">${currentLang === "en" ? "Pricing Model:" : "Fiyat Modeli:"}</span>
+          <span class="benchmark-metric-val">${currentApp.metadata.price || "Ücretsiz"}</span>
+        </div>
       </div>
     </div>
 
     <!-- Competitor App Column -->
     <div class="benchmark-col ${!currentWinner ? 'winner' : ''}">
+      ${!currentWinner ? `<div class="benchmark-winner-badge">${currentLang === 'en' ? '🏆 MARKET LEADER' : '🏆 PAZAR LİDERİ'}</div>` : ''}
       <div class="benchmark-app-title">⚡ ${compData.app_name.toUpperCase()} (RAKİP)</div>
-      <div class="benchmark-metric-row">
-        <span class="benchmark-metric-label">${currentLang === "en" ? "Rating:" : "Puan:"}</span>
-        <span class="benchmark-metric-val">${compData.metadata.average_rating} / 5.0</span>
+      <div class="benchmark-table">
+        <div class="benchmark-metric-row">
+          <span class="benchmark-metric-label">${currentLang === "en" ? "Average Rating:" : "Ortalama Puan:"}</span>
+          <span class="benchmark-metric-val">${compData.metadata.average_rating} / 5.0</span>
+        </div>
+        <div class="benchmark-metric-row">
+          <span class="benchmark-metric-label">${currentLang === "en" ? "Satisfaction Score (CSAT):" : "Memnuniyet Skoru (CSAT):"}</span>
+          <span class="benchmark-metric-val" style="color: #4ade80;">%${compScore}</span>
+        </div>
+        <div class="benchmark-metric-row">
+          <span class="benchmark-metric-label">${currentLang === "en" ? "Positive Sentiment:" : "Pozitif Duygu:"}</span>
+          <span class="benchmark-metric-val">%${compData.sentiment_dist.positive_pct}</span>
+        </div>
+        <div class="benchmark-metric-row">
+          <span class="benchmark-metric-label">${currentLang === "en" ? "Total Ratings:" : "Toplam Mağaza Oylaması:"}</span>
+          <span class="benchmark-metric-val">${compData.metadata.total_ratings.toLocaleString()}</span>
+        </div>
+        <div class="benchmark-metric-row">
+          <span class="benchmark-metric-label">${currentLang === "en" ? "Category:" : "Kategori:"}</span>
+          <span class="benchmark-metric-val">${compData.metadata.category}</span>
+        </div>
+        <div class="benchmark-metric-row">
+          <span class="benchmark-metric-label">${currentLang === "en" ? "Developer:" : "Geliştirici:"}</span>
+          <span class="benchmark-metric-val">${compData.metadata.developer}</span>
+        </div>
       </div>
-      <div class="benchmark-metric-row">
-        <span class="benchmark-metric-label">${currentLang === "en" ? "Positive Sentiment:" : "Pozitif Duygu:"}</span>
-        <span class="benchmark-metric-val">%${compData.sentiment_dist.positive_pct}</span>
-      </div>
-      <div class="benchmark-metric-row">
-        <span class="benchmark-metric-label">${currentLang === "en" ? "Churn Risk Score:" : "Churn Riski:"}</span>
-        <span class="benchmark-metric-val">%${compData.churn_risk_score}</span>
-      </div>
-      <div class="benchmark-metric-row">
-        <span class="benchmark-metric-label">${currentLang === "en" ? "Developer:" : "Geliştirici:"}</span>
-        <span class="benchmark-metric-val">${compData.metadata.developer}</span>
-      </div>
+    </div>
+
+    <!-- AI Actionable Moves Box -->
+    <div class="benchmark-moves-card">
+      <div class="benchmark-moves-title">⚡ ${currentLang === "en" ? "3 CRITICAL AI MOVES TO OUTPERFORM COMPETITOR" : "RAKİBİN ÖNÜNE GEÇMEK İÇİN 3 KRİTİK YAPAY ZEKA HAMLESİ"}</div>
+      <ul class="benchmark-moves-list">
+        <li class="benchmark-move-item"><span class="benchmark-move-bullet">1.</span> <strong>${currentLang === "en" ? "Differentiate User Onboarding:" : "Kullanıcı Katılım Akışını Sadeleştirin:"}</strong> ${currentLang === "en" ? "Simplify activation and reduce initial login friction that competitors often fail at." : "Rakiplerin sıkça takıldığı ilk giriş ve aktivasyon adımlarını sıfır sürtünmeyle çözün."}</li>
+        <li class="benchmark-move-item"><span class="benchmark-move-bullet">2.</span> <strong>${currentLang === "en" ? "Target High-Frequency Complaints:" : "En Çok Şikayet Alan Özelliklere Odaklanın:"}</strong> ${currentLang === "en" ? "Address negative review topics mentioned in the sentiment breakdown before the next major release." : "Duygu dağılımında öne çıkan olumsuz yorum konularını bir sonraki güncellemede çözerek doğrudan pazar payı kazanın."}</li>
+        <li class="benchmark-move-item"><span class="benchmark-move-bullet">3.</span> <strong>${currentLang === "en" ? "Transparent Feature Packaging:" : "Şeffaf Özellik Dağılımı:"}</strong> ${currentLang === "en" ? "Offer free access to the most demanded features to pull dissatisfied users from the competitor." : "Kullanıcıların en çok talep ettiği temel özellikleri kısıtlamadan sunarak rakip kullanıcıları uygulamanıza çekin."}</li>
+      </ul>
     </div>
   `;
 
@@ -1094,6 +1203,7 @@ async function executeSideBySideBenchmark(currentApp, competitorTarget) {
 }
 
 function renderCategoryList(containerEl, items) {
+  if (!containerEl) return;
   containerEl.innerHTML = "";
   if (!items || items.length === 0) {
     containerEl.innerHTML = `<div class="feature-item-desc">${currentLang === "en" ? "No featured item found." : "Öne çıkan kayıt bulunamadı."}</div>`;
@@ -1151,6 +1261,7 @@ function dateTimeStr() {
 
 function downloadHtmlReport(data) {
   if (!data) return;
+  const scoreVal = data.satisfaction_score !== undefined ? data.satisfaction_score : (data.sentiment_dist ? data.sentiment_dist.positive_pct : 0);
 
   const htmlContent = `<!DOCTYPE html>
 <html lang="${currentLang}">
@@ -1159,13 +1270,13 @@ function downloadHtmlReport(data) {
   <title>REVIXA Report — ${data.app_name}</title>
   <style>
     body { font-family: 'Segoe UI', Arial, sans-serif; background: #000; color: #fff; padding: 40px; line-height: 1.6; max-width: 1000px; margin: 0 auto; }
-    .card { background: #09090b; border: 1px solid #27272a; padding: 24px; margin-bottom: 24px; }
+    .card { background: #09090b; border: 1px solid #27272a; padding: 24px; margin-bottom: 24px; border-radius: 6px; }
     h1 { font-size: 2rem; color: #fff; margin-bottom: 8px; font-family: monospace; text-transform: uppercase; }
     .meta { color: #a1a1aa; font-size: 0.9rem; margin-bottom: 20px; font-family: monospace; }
     .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
-    .metric-card { background: #000; border: 1px solid #27272a; padding: 16px; text-align: center; }
+    .metric-card { background: #000; border: 1px solid #27272a; padding: 16px; text-align: center; border-radius: 4px; }
     .metric-val { font-size: 1.5rem; font-weight: bold; color: #fff; font-family: monospace; }
-    .metric-lbl { font-size: 0.8rem; color: #a1a1aa; font-family: monospace; }
+    .metric-lbl { font-size: 0.8rem; color: #a1a1aa; font-family: monospace; margin-bottom: 6px; }
     .section-title { font-size: 1.1rem; font-weight: bold; color: #fff; font-family: monospace; margin-bottom: 12px; border-bottom: 1px dashed #27272a; padding-bottom: 8px; }
     .feature-item { border-bottom: 1px dashed #27272a; padding: 12px 0; }
     .feature-title { font-weight: bold; color: #fff; font-family: monospace; }
@@ -1187,8 +1298,8 @@ function downloadHtmlReport(data) {
         <div class="metric-val">%${data.sentiment_dist.positive_pct}</div>
       </div>
       <div class="metric-card">
-        <div class="metric-lbl">CHURN RİSKİ</div>
-        <div class="metric-val">%${data.churn_risk_score !== undefined ? data.churn_risk_score : 0}</div>
+        <div class="metric-lbl">MEMNUNİYET SKORU (CSAT)</div>
+        <div class="metric-val" style="color: #4ade80;">%${scoreVal}</div>
       </div>
     </div>
   </div>
